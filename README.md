@@ -98,6 +98,20 @@ Manual verification steps: see [MANUAL_TASKS.md](MANUAL_TASKS.md).
 
 **Note:** Dedicated SOS route (API-006) is Phase 6; use `POST /incidents` with `source` for the four intake channels in Phase 4.
 
+### AI triage worker (Phase 5)
+
+The `worker` service polls `classification_queue`, classifies incidents (LLM when `LLM_API_KEY` is set, otherwise rule-based fallback), runs PostGIS dedup, and publishes updates to Redis channel `rescuegrid:incidents`.
+
+```bash
+docker compose build api worker
+docker compose up -d
+docker compose logs -f worker
+```
+
+Optional LLM (OpenAI-compatible): set `LLM_API_KEY`, `LLM_API_BASE_URL`, and `LLM_MODEL` in `.env`. Tuning: `CLASSIFIER_POLL_SECONDS`, `CLASSIFIER_MAX_ATTEMPTS`, `DEDUP_RADIUS_METERS`, `DEDUP_TIME_WINDOW_MINUTES`.
+
+After `POST /incidents`, expect `classification_queue.status=done` and `incidents.status=classified` (or `merged` / `possible_duplicate` when dedup matches).
+
 ### Phase 0 limitations
 
 - LLM, email, and object storage keys are optional until later roadmap phases.

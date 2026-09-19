@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError, AuthorizationError, NotFoundError
 from app.db.geo import point_to_lat_lng, point_wkt
-from app.models.enums import IncidentSource, IncidentStatus
+from app.models.enums import IncidentCategory, IncidentPriority, IncidentSource, IncidentStatus
 from app.models.incident import Incident
 from app.models.user import User, UserRole
 from app.modules.incidents.pii import resolve_pii_visibility
@@ -58,6 +58,12 @@ class IncidentService:
         if existing:
             return existing, True
 
+        initial_priority = None
+        if body.source == IncidentSource.sos:
+            initial_priority = IncidentPriority.critical
+        elif body.category == IncidentCategory.personal_safety:
+            initial_priority = IncidentPriority.critical
+
         incident = Incident(
             category=body.category,
             description=body.description,
@@ -67,6 +73,7 @@ class IncidentService:
             is_anonymous=body.is_anonymous,
             reporter_id=actor.id if actor and not body.is_anonymous else None,
             status=IncidentStatus.reported,
+            priority=initial_priority,
         )
         await self.repo.add(incident)
         await self.repo.add_idempotency_key(body.idempotency_key, incident.id)

@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = Field(default=None, alias="BOOTSTRAP_ADMIN_EMAIL")
     bootstrap_admin_password: str | None = Field(default=None, alias="BOOTSTRAP_ADMIN_PASSWORD")
 
+    classifier_poll_seconds: float = Field(default=2.0, alias="CLASSIFIER_POLL_SECONDS")
+    classifier_max_attempts: int = Field(default=5, alias="CLASSIFIER_MAX_ATTEMPTS")
+
 
 @lru_cache
 def get_settings() -> Settings:

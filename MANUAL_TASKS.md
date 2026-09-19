@@ -79,3 +79,48 @@ Dispatcher JWT: `GET /incidents`, `GET /incidents/{uuid}`.
 ## 7. Deferred
 
 - **API-006 SOS** dedicated route is Phase 6; four intake sources use `POST /incidents` with `source` until then.
+
+---
+
+# Phase 5 manual checklist (AI triage)
+
+## 1. Sync environment
+
+Merge from `.env.example`: `CLASSIFIER_POLL_SECONDS`, `CLASSIFIER_MAX_ATTEMPTS`, and optional `LLM_*` keys.
+
+## 2. Rebuild worker
+
+```powershell
+docker compose build api worker
+docker compose up -d
+```
+
+## 3. Verify classification (fallback)
+
+Leave `LLM_API_KEY` empty. POST a new incident, then:
+
+```powershell
+docker compose logs -f worker
+```
+
+In psql: `classification_queue` → `done`; `incidents` → `classified` with `classification_source=fallback`.
+
+## 4. Optional LLM smoke
+
+Set provider credentials in `.env`, restart worker, submit one incident; confirm `classification_source=llm`.
+
+## 5. Dedup smoke
+
+Submit two `fire` reports at the same coordinates within 30 minutes; second should be `merged` or `possible_duplicate` with `merged_into_id` set.
+
+## 6. Phase gate
+
+```powershell
+docker compose run --rm api pytest
+```
+
+Confirm tests pass with no real LLM key (NFR-004 fallback gate).
+
+## 7. Next phase
+
+Phase 6: citizen `/report` and `/sos` UI against this API.
