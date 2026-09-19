@@ -8,6 +8,7 @@ from app.db.session import close_db, init_db
 from app.middleware.cors import add_cors_middleware
 from app.middleware.correlation import CorrelationIdMiddleware
 from app.middleware.logging import configure_logging, RequestLoggingMiddleware
+from app.middleware.auth import AuthContextMiddleware
 from app.middleware.rate_limit import setup_rate_limiting
 
 
@@ -18,6 +19,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         init_db()
+        if (
+            settings.environment == "development"
+            and settings.bootstrap_admin_email
+            and settings.bootstrap_admin_password
+        ):
+            from app.db.session import get_session_factory
+            from app.modules.auth.service import bootstrap_admin_if_needed
+
+            factory = get_session_factory()
+            async with factory() as session:
+                await bootstrap_admin_if_needed(
+                    session,
+                    settings.bootstrap_admin_email,
+                    settings.bootstrap_admin_password,
+                )
         yield
         await close_db()
 
@@ -26,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     setup_rate_limiting(app)
     add_cors_middleware(app, settings)
+    app.add_middleware(AuthContextMiddleware)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(CorrelationIdMiddleware)
 
@@ -34,6 +51,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def register_routes(app: FastAPI, settings: Settings) -> None:
+    from app.modules.auth.router import router as auth_router
+
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok", "service": "api"}
@@ -44,3 +63,5 @@ def register_routes(app: FastAPI, settings: Settings) -> None:
         @app.get("/_dev/trigger-error")
         async def trigger_error() -> None:
             raise InternalServerError("deliberate test failure")
+
+    app.include_router(auth_router)
