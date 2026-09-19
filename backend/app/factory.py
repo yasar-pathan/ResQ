@@ -54,11 +54,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def register_routes(app: FastAPI, settings: Settings) -> None:
+    from pathlib import Path
+
+    from fastapi.staticfiles import StaticFiles
+
     from app.modules.alerts.router import router as alerts_router
     from app.modules.analytics.router import router as analytics_router
     from app.modules.assignments.router import assign_router, router as assignments_router
     from app.modules.auth.router import router as auth_router
     from app.modules.incidents.router import router as incidents_router
+    from app.modules.media.router import router as media_router
     from app.modules.notifications.router import router as notifications_router
     from app.modules.resources.router import router as resources_router
     from app.workers.gateway import router as ws_router
@@ -74,8 +79,13 @@ def register_routes(app: FastAPI, settings: Settings) -> None:
         async def trigger_error() -> None:
             raise InternalServerError("deliberate test failure")
 
+    uploads = Path(__file__).resolve().parent.parent / "uploads"
+    uploads.mkdir(parents=True, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=str(uploads)), name="uploads")
+
     app.include_router(auth_router)
     app.include_router(incidents_router)
+    app.include_router(media_router)
     app.include_router(resources_router)
     app.include_router(assignments_router)
     app.include_router(assign_router)

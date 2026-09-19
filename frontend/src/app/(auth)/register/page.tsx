@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { Button } from "@/components/ui/Button";
@@ -9,10 +8,10 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { ApiError, registerCitizen } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
+import { hardNavigate, postLoginPath } from "@/lib/postLogin";
 
 export default function RegisterPage() {
   const { login } = useAuth();
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,11 +30,10 @@ export default function RegisterPage() {
         password,
         phone: phone.trim() || undefined,
       });
-      await login(email, password);
-      router.replace("/");
+      const user = await login(email, password);
+      hardNavigate(postLoginPath(user.role, null));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Registration failed");
-    } finally {
       setBusy(false);
     }
   }

@@ -114,6 +114,17 @@ export async function createIncident(input: {
   return parseEnvelope<IncidentCreated>(res);
 }
 
+export async function uploadMedia(file: File): Promise<{ url: string }> {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch(`${getApiBaseUrl()}/media/upload`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    body,
+  });
+  return parseEnvelope(res);
+}
+
 export async function createSos(input: {
   location: LocationPayload;
   is_anonymous?: boolean;

@@ -36,6 +36,7 @@ Every manual knob is listed once in the **Config table** below. Phase checklists
 | CORS | `FRONTEND_ORIGIN=http://localhost:3000` | |
 | Frontend hot-reload | `docker-compose.override.yml` | Bind-mount `./frontend` (dev only; CI uses image) |
 | Map tiles (Leaflet) | `NEXT_PUBLIC_MAP_TILE_URL` | OSM by default; needs network |
+| Report photo uploads | API `POST /media/upload` → `/uploads/*` | Local disk in Compose (`backend/uploads/`); not S3 |
 | Dependency audits | CI `\|\| true` | Informational; do not block on transitive CVEs by default |
 
 ---

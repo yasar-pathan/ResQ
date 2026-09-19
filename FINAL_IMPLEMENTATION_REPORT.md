@@ -78,7 +78,7 @@ docker compose run --rm api alembic current
 | Password recovery | Out of MVP scope |
 | SMS / push | Simulated (`SMS_SIMULATED` logs); no carrier integration |
 | Live GPS tracking | Not implemented; intake uses one-shot lat/lng |
-| Media upload (SEC-08) | **URL-only** `photo_url` field — no binary upload pipeline, content-type allowlist, or object-storage signed URLs in this release. Do not claim “upload hardened.” |
+| Media upload (SEC-08) | Local `POST /media/upload` (JPEG/PNG/WebP ≤2MB) stores under `backend/uploads/` and returns a URL. Not cloud object storage. |
 | Cloud deploy | Documented in `MANUAL_TASKS.md`; not run without operator credentials |
 | PgBouncer | Optional profile; default stack uses direct Postgres |
 

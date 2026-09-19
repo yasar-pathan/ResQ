@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { ApiError, createIncident } from "@/lib/api/client";
-import { getCurrentPosition } from "@/lib/geo";
+import { FormEvent, useRef, useState } from "react";
+import { Upload, X } from "lucide-react";
+import { LocationPicker } from "@/components/maps/LocationPicker";
+import { Button } from "@/components/ui/Button";
+import { ApiError, createIncident, uploadMedia } from "@/lib/api/client";
 import {
   INCIDENT_CATEGORIES,
   ReportFormValues,
@@ -27,21 +29,10 @@ export default function ReportPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [trackingRef, setTrackingRef] = useState<string | null>(null);
   const [locHint, setLocHint] = useState<string | null>(null);
-
-  async function useMyLocation() {
-    setLocHint("Getting location…");
-    const result = await getCurrentPosition();
-    if (result.ok) {
-      setValues((v) => ({
-        ...v,
-        latitude: String(result.latitude),
-        longitude: String(result.longitude),
-      }));
-      setLocHint("Location captured from your device.");
-    } else {
-      setLocHint("Could not get location. Enter latitude and longitude manually.");
-    }
-  }
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -75,6 +66,39 @@ export default function ReportPage() {
     }
   }
 
+  async function onPhotoSelected(file: File | null) {
+    setPhotoError(null);
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setPhotoError("Use a JPEG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError("Image must be under 2MB.");
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      const localPreview = URL.createObjectURL(file);
+      setPhotoPreview(localPreview);
+      const uploaded = await uploadMedia(file);
+      setValues((v) => ({ ...v, photo_url: uploaded.url }));
+    } catch (err) {
+      setPhotoPreview(null);
+      setValues((v) => ({ ...v, photo_url: "" }));
+      setPhotoError(err instanceof ApiError ? err.message : "Upload failed");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  function clearPhoto() {
+    setPhotoPreview(null);
+    setPhotoError(null);
+    setValues((v) => ({ ...v, photo_url: "" }));
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
   if (trackingRef) {
     return (
       <section className="citizen-narrow stack animate-enter">
@@ -89,9 +113,7 @@ export default function ReportPage() {
           <p>
             Tracking reference: <strong>{trackingRef}</strong>
           </p>
-          <p className="muted">
-            Keep this code. You can check status anytime without signing in.
-          </p>
+          <p className="muted">Keep this code. You can check status anytime without signing in.</p>
           <Link className="btn btn-primary" href={`/report/${trackingRef}`}>
             Track status
           </Link>
@@ -132,45 +154,15 @@ export default function ReportPage() {
         </div>
 
         <div className="stack">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center" }}>
-            <span className="label" style={{ marginBottom: 0 }}>
-              Location
-            </span>
-            <button type="button" className="btn btn-secondary" onClick={useMyLocation}>
-              Use my location
-            </button>
-          </div>
+          <span className="label">Location</span>
+          <LocationPicker
+            latitude={values.latitude}
+            longitude={values.longitude}
+            onChange={(lat, lng) => setValues((v) => ({ ...v, latitude: lat, longitude: lng }))}
+            onHint={setLocHint}
+            error={errors.location}
+          />
           {locHint ? <p className="muted" style={{ fontSize: "0.9rem" }}>{locHint}</p> : null}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-            <div>
-              <label className="label" htmlFor="latitude">
-                Latitude
-              </label>
-              <input
-                id="latitude"
-                className="field"
-                inputMode="decimal"
-                value={values.latitude}
-                onChange={(e) => setValues({ ...values, latitude: e.target.value })}
-                required
-              />
-              {errors.latitude ? <p className="field-error">{errors.latitude}</p> : null}
-            </div>
-            <div>
-              <label className="label" htmlFor="longitude">
-                Longitude
-              </label>
-              <input
-                id="longitude"
-                className="field"
-                inputMode="decimal"
-                value={values.longitude}
-                onChange={(e) => setValues({ ...values, longitude: e.target.value })}
-                required
-              />
-              {errors.longitude ? <p className="field-error">{errors.longitude}</p> : null}
-            </div>
-          </div>
           <div>
             <label className="label" htmlFor="address_text">
               Address (optional)
@@ -199,18 +191,48 @@ export default function ReportPage() {
           {errors.description ? <p className="field-error">{errors.description}</p> : null}
         </div>
 
-        <div>
-          <label className="label" htmlFor="photo_url">
-            Photo URL (optional)
-          </label>
+        <div className="stack" style={{ gap: "0.75rem" }}>
+          <span className="label">Photo (optional)</span>
           <input
-            id="photo_url"
-            className="field"
-            type="url"
-            placeholder="https://…"
-            value={values.photo_url}
-            onChange={(e) => setValues({ ...values, photo_url: e.target.value })}
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            id="photo-upload"
+            onChange={(e) => void onPhotoSelected(e.target.files?.[0] ?? null)}
           />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={photoBusy}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" aria-hidden />
+              {photoBusy ? "Uploading…" : "Upload photo"}
+            </Button>
+            {values.photo_url ? (
+              <Button type="button" variant="secondary" onClick={clearPhoto}>
+                <X className="h-4 w-4" aria-hidden />
+                Remove
+              </Button>
+            ) : null}
+          </div>
+          {photoError ? <p className="field-error">{photoError}</p> : null}
+          {photoPreview || values.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoPreview || values.photo_url}
+              alt="Upload preview"
+              style={{
+                maxWidth: "100%",
+                maxHeight: 180,
+                borderRadius: 8,
+                border: "1px solid var(--color-border)",
+                objectFit: "cover",
+              }}
+            />
+          ) : null}
         </div>
 
         <label className="toggle-row">
@@ -224,7 +246,7 @@ export default function ReportPage() {
 
         {formError ? <div className="alert-error" role="alert">{formError}</div> : null}
 
-        <button type="submit" className="btn btn-primary" disabled={submitting}>
+        <button type="submit" className="btn btn-primary" disabled={submitting || photoBusy}>
           {submitting ? "Submitting…" : "Submit report"}
         </button>
       </form>

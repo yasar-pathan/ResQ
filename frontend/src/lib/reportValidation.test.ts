@@ -2,7 +2,22 @@ import { describe, expect, it } from "vitest";
 import { nextSosStep, validateReportForm } from "@/lib/reportValidation";
 
 describe("validateReportForm", () => {
-  it("rejects invalid coordinates", () => {
+  it("rejects missing location with a single location error", () => {
+    const errors = validateReportForm({
+      category: "fire",
+      description: "Enough text for a valid description here",
+      latitude: "",
+      longitude: "",
+      address_text: "",
+      photo_url: "",
+      is_anonymous: false,
+    });
+    expect(errors.location).toBeTruthy();
+    expect(errors.latitude).toBeUndefined();
+    expect(errors.longitude).toBeUndefined();
+  });
+
+  it("rejects invalid coordinates via location error", () => {
     const errors = validateReportForm({
       category: "fire",
       description: "Enough text for a valid description here",
@@ -12,7 +27,7 @@ describe("validateReportForm", () => {
       photo_url: "",
       is_anonymous: false,
     });
-    expect(errors.latitude).toBeTruthy();
+    expect(errors.location).toBeTruthy();
   });
 
   it("accepts a valid report payload", () => {

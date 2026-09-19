@@ -945,17 +945,15 @@ textarea {
   height: 100%;
   object-fit: cover;
   display: block;
+  filter: saturate(0.85) contrast(1.05) brightness(0.92);
 }
 
 .home-hero-veil {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(15, 23, 42, 0.25) 0%,
-    rgba(15, 23, 42, 0.55) 45%,
-    rgba(15, 23, 42, 0.82) 100%
-  );
+  background:
+    radial-gradient(ellipse 75% 70% at 50% 45%, transparent 20%, rgba(15, 23, 42, 0.55) 70%, rgba(15, 23, 42, 0.88) 100%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.45) 40%, rgba(15, 23, 42, 0.88) 100%);
 }
 
 .home-hero-content {
@@ -1038,17 +1036,61 @@ textarea {
   background: #0f172a;
 }
 
+.home-cta {
+  width: 100%;
+  max-width: 34rem;
+}
+
+.home-cta .btn-primary {
+  flex: 2 1 0;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.home-cta .btn-sos {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 5.5rem;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 399px) {
+  .home-cta {
+    flex-direction: column;
+  }
+
+  .home-cta .btn-primary,
+  .home-cta .btn-sos {
+    flex: none;
+    width: 100%;
+  }
+}
+
 .auth-visual {
   position: relative;
-  min-height: 280px;
+  min-height: 40dvh;
+  height: 100%;
   overflow: hidden;
+  align-self: stretch;
 }
 
 .auth-visual img {
   width: 100%;
   height: 100%;
+  min-height: 40dvh;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+
+@media (min-width: 861px) {
+  .auth-visual {
+    min-height: 100vh;
+  }
+
+  .auth-visual img {
+    min-height: 100vh;
+  }
 }
 
 .auth-visual-caption {
@@ -1111,7 +1153,12 @@ textarea {
   }
 
   .auth-visual {
-    min-height: 200px;
+    min-height: 40dvh;
+    height: 40dvh;
+  }
+
+  .auth-visual img {
+    min-height: 40dvh;
   }
 }
 

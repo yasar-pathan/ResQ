@@ -1,23 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
+import { hardNavigate, postLoginPath } from "@/lib/postLogin";
 
 function LoginForm() {
   const { login } = useAuth();
-  const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState("dispatcher@rescuegrid.dev");
   const [password, setPassword] = useState("ChangeMeOps123!");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (params.get("error") === "unauthorized") {
+      setError("You do not have access to that area. Sign in with an operator account.");
+    }
+  }, [params]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -25,15 +31,10 @@ function LoginForm() {
     setError(null);
     try {
       const user = await login(email, password);
-      const next = params.get("next");
-      if (user.role === "field_team") {
-        router.replace(next?.startsWith("/field") ? next : "/field/assignments");
-      } else {
-        router.replace(next?.startsWith("/") ? next : "/dashboard");
-      }
+      const dest = postLoginPath(user.role, params.get("next"));
+      hardNavigate(dest);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed");
-    } finally {
       setBusy(false);
     }
   }

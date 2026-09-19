@@ -18,7 +18,7 @@ export type ReportFormValues = {
   is_anonymous: boolean;
 };
 
-export type FieldErrors = Partial<Record<keyof ReportFormValues, string>>;
+export type FieldErrors = Partial<Record<keyof ReportFormValues | "location", string>>;
 
 export function validateReportForm(values: ReportFormValues): FieldErrors {
   const errors: FieldErrors = {};
@@ -34,11 +34,17 @@ export function validateReportForm(values: ReportFormValues): FieldErrors {
   }
   const lat = Number(values.latitude);
   const lng = Number(values.longitude);
-  if (values.latitude.trim() === "" || Number.isNaN(lat) || lat < -90 || lat > 90) {
-    errors.latitude = "Latitude must be between -90 and 90";
-  }
-  if (values.longitude.trim() === "" || Number.isNaN(lng) || lng < -180 || lng > 180) {
-    errors.longitude = "Longitude must be between -180 and 180";
+  if (
+    values.latitude.trim() === "" ||
+    values.longitude.trim() === "" ||
+    Number.isNaN(lat) ||
+    Number.isNaN(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    errors.location = "Set a location via map or device";
   }
   return errors;
 }

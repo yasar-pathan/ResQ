@@ -1,45 +1,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = [
-  "/dashboard",
-  "/incidents",
-  "/alerts",
-  "/analytics",
-  "/settings",
-  "/field",
-  "/resources",
-];
-
 const ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
   { prefix: "/settings", roles: ["admin"] },
   { prefix: "/field", roles: ["field_team", "admin"] },
-  {
-    prefix: "/dashboard",
-    roles: ["dispatcher", "admin"],
-  },
-  {
-    prefix: "/incidents",
-    roles: ["dispatcher", "admin"],
-  },
-  {
-    prefix: "/alerts",
-    roles: ["dispatcher", "admin"],
-  },
-  {
-    prefix: "/analytics",
-    roles: ["dispatcher", "admin"],
-  },
-  {
-    prefix: "/resources",
-    roles: ["dispatcher", "admin"],
-  },
+  { prefix: "/dashboard", roles: ["dispatcher", "admin"] },
+  { prefix: "/incidents", roles: ["dispatcher", "admin"] },
+  { prefix: "/alerts", roles: ["dispatcher", "admin"] },
+  { prefix: "/analytics", roles: ["dispatcher", "admin"] },
+  { prefix: "/resources", roles: ["dispatcher", "admin"] },
 ];
 
 function isProtected(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
+  return ROLE_GATES.some((g) => pathname === g.prefix || pathname.startsWith(`${g.prefix}/`));
 }
 
 export function middleware(request: NextRequest) {
@@ -73,12 +46,19 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/incidents",
     "/incidents/:path*",
+    "/alerts",
     "/alerts/:path*",
+    "/analytics",
     "/analytics/:path*",
+    "/settings",
     "/settings/:path*",
+    "/field",
     "/field/:path*",
+    "/resources",
     "/resources/:path*",
   ],
 };
