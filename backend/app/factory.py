@@ -40,6 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="RescueGrid API", version="0.1.0", lifespan=lifespan)
     register_exception_handlers(app)
 
+    # Outermost last: correlation → logging → CORS → rate limit (Starlette order)
     setup_rate_limiting(app)
     add_cors_middleware(app, settings)
     app.add_middleware(AuthContextMiddleware)
@@ -52,6 +53,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 def register_routes(app: FastAPI, settings: Settings) -> None:
     from app.modules.auth.router import router as auth_router
+    from app.modules.incidents.router import router as incidents_router
+    from app.modules.resources.router import router as resources_router
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -65,3 +68,5 @@ def register_routes(app: FastAPI, settings: Settings) -> None:
             raise InternalServerError("deliberate test failure")
 
     app.include_router(auth_router)
+    app.include_router(incidents_router)
+    app.include_router(resources_router)

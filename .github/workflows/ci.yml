@@ -28,15 +28,46 @@ jobs:
             fi
             sleep 5
           done
+          echo "API health check failed"
           docker compose logs
+          exit 1
+
+      - name: Wait for worker health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8081/health; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Worker health check failed"
+          docker compose logs worker
           exit 1
 
       - name: Apply database migrations
         run: docker compose run --rm migrate
 
+      - name: Seed dev data smoke
+        run: docker compose run --rm api python -m app.scripts.seed_dev
+
       - name: Backend smoke tests
         run: docker compose run --rm api pytest
+
+      - name: Frontend production build
+        run: docker compose run --rm frontend npm run build
 
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  backend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Ruff check
+        run: |
+          pip install ruff==0.8.4
+          ruff check backend/app backend/tests
