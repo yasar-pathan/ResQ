@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,7 @@ class ResourceCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     location: LocationInput
     capabilities: dict[str, Any] | None = None
+    operator_user_id: UUID | None = None
 
 
 class ResourceUpdateRequest(BaseModel):
@@ -19,6 +21,7 @@ class ResourceUpdateRequest(BaseModel):
     capabilities: dict[str, Any] | None = None
     status: ResourceStatus | None = None
     is_active: bool | None = None
+    operator_user_id: UUID | None = None
 
 
 class ResourceListParams(BaseModel):

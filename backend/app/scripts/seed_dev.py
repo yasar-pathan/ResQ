@@ -54,6 +54,28 @@ async def seed() -> None:
             session.add(admin_user)
             await session.flush()
 
+        async def ensure_user(email: str, name: str, role: UserRole) -> User:
+            result = await session.execute(select(User).where(User.email == email))
+            user = result.scalar_one_or_none()
+            if user:
+                return user
+            user = User(
+                name=name,
+                email=email,
+                password_hash=hash_password("ChangeMeOps123!"),
+                role=role,
+            )
+            session.add(user)
+            await session.flush()
+            return user
+
+        dispatcher = await ensure_user(
+            "dispatcher@rescuegrid.dev", "Seed Dispatcher", UserRole.dispatcher
+        )
+        field_op = await ensure_user(
+            "field@rescuegrid.dev", "Seed Field", UserRole.field_team
+        )
+
         resources = [
             Resource(
                 type=ResourceType.team,
@@ -61,6 +83,7 @@ async def seed() -> None:
                 location=point_wkt(12.97, 77.59),
                 capabilities={"handles": ["fire", "medical"]},
                 status=ResourceStatus.available,
+                operator_user_id=field_op.id,
             ),
             Resource(
                 type=ResourceType.vehicle,
@@ -68,6 +91,7 @@ async def seed() -> None:
                 location=point_wkt(12.98, 77.60),
                 capabilities={"handles": ["medical"]},
                 status=ResourceStatus.assigned,
+                operator_user_id=field_op.id,
             ),
         ]
         for r in resources:
@@ -122,7 +146,8 @@ async def seed() -> None:
             Assignment(
                 incident_id=incidents[0].id,
                 resource_id=resources[1].id,
-                assigned_by_user_id=admin_user.id,
+                assigned_by_user_id=dispatcher.id,
+                assignee_user_id=field_op.id,
                 ai_recommended=False,
                 decision=AssignmentDecision.manual,
                 status=AssignmentStatus.en_route,

@@ -111,7 +111,34 @@ curl -s -X POST http://localhost:8000/incidents/sos \
   -d '{"location":{"latitude":12.9716,"longitude":77.5946},"idempotency_key":"sos-demo-00000001","is_anonymous":true}'
 ```
 
-`POST /incidents/sos` creates `source=sos`, `category=personal_safety`, `priority=critical`. Trusted-contact rows may be stored; notification delivery is Phase 8.
+`POST /incidents/sos` creates `source=sos`, `category=personal_safety`, `priority=critical`. Trusted contacts receive a minimal-disclosure simulated SMS when provided (Phase 8).
+
+### Dispatch, dashboard & alerts (Phases 7–8)
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:3000/login | Operator / field sign-in |
+| http://localhost:3000/dashboard | Live ops queue + map + WS |
+| http://localhost:3000/incidents/{id} | Recommendations + assign |
+| http://localhost:3000/alerts | Alerts center |
+| http://localhost:3000/field/assignments | Field team assignments |
+
+Seed operators (after `seed_dev`): `dispatcher@rescuegrid.dev` / `ChangeMeOps123!`, `field@rescuegrid.dev` / `ChangeMeOps123!`.
+
+```bash
+# Login
+curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dispatcher@rescuegrid.dev","password":"ChangeMeOps123!"}'
+
+# Recommendations + assign (replace TOKEN and IDs)
+curl -s http://localhost:8000/incidents/INCIDENT_UUID/recommendations -H "Authorization: Bearer TOKEN"
+curl -s -X POST http://localhost:8000/incidents/INCIDENT_UUID/assign \
+  -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" \
+  -d '{"resource_id":"RESOURCE_UUID","decision":"accepted_ai"}'
+```
+
+Live dashboard: WebSocket `ws://localhost:8000/ws/dashboard?token=ACCESS_TOKEN` (dispatcher/admin). Redis channel `rescuegrid:incidents` fans out classification, assignment, and alert events. Alert worker evaluates critical / delayed-response / escalation rules every 30s (`DELAYED_RESPONSE_THRESHOLD_MINUTES`).
 
 ### AI triage worker (Phase 5)
 

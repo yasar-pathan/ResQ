@@ -26,6 +26,7 @@ def serialize_resource(resource: Resource) -> dict:
         "capabilities": resource.capabilities,
         "status": resource.status.value,
         "is_active": resource.is_active,
+        "operator_user_id": str(resource.operator_user_id) if resource.operator_user_id else None,
         "created_at": resource.created_at.isoformat(),
         "updated_at": resource.updated_at.isoformat(),
     }
@@ -42,6 +43,7 @@ class ResourceService:
             location=point_wkt(body.location.latitude, body.location.longitude),
             capabilities=body.capabilities,
             status=ResourceStatus.available,
+            operator_user_id=body.operator_user_id,
         )
         self.session.add(resource)
         await self.session.commit()
@@ -92,6 +94,8 @@ class ResourceService:
             resource.is_active = body.is_active
             if not body.is_active:
                 resource.status = ResourceStatus.unavailable
+        if body.operator_user_id is not None:
+            resource.operator_user_id = body.operator_user_id
 
         await self.session.commit()
         await self.session.refresh(resource)

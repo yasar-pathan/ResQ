@@ -21,6 +21,9 @@ export default function HomePage() {
           SOS
         </Link>
       </div>
+      <p className="muted" style={{ marginTop: "0.5rem" }}>
+        Dispatcher or field team? <Link href="/login">Operator sign-in</Link>
+      </p>
     </section>
   );
 }

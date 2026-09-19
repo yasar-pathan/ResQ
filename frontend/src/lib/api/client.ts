@@ -5,7 +5,7 @@ export function getApiBaseUrl(): string {
 }
 
 export function getWsUrl(): string {
-  return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws";
+  return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws/dashboard";
 }
 
 export function newIdempotencyKey(prefix = "web"): string {
@@ -141,4 +141,193 @@ export async function getIncidentStatus(trackingRef: string): Promise<PublicStat
     { headers: { Accept: "application/json" }, cache: "no-store" },
   );
   return parseEnvelope<PublicStatus>(res);
+}
+
+function authHeaders(token: string): HeadersInit {
+  return {
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+export type UserPublic = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone: string | null;
+};
+
+export type TokenPair = {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+};
+
+export async function login(email: string, password: string): Promise<TokenPair> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  return parseEnvelope<TokenPair>(res);
+}
+
+export async function getMe(token: string): Promise<UserPublic> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope<UserPublic>(res);
+}
+
+export type IncidentListItem = IncidentCreated & {
+  ai_summary?: string | null;
+  tracking_ref: string;
+};
+
+export async function listIncidents(
+  token: string,
+  params?: { status?: string; page?: number; limit?: number },
+): Promise<{ items: IncidentListItem[]; total: number; page: number; limit: number }> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  qs.set("page", String(params?.page ?? 1));
+  qs.set("limit", String(params?.limit ?? 50));
+  const res = await fetch(`${getApiBaseUrl()}/incidents?${qs}`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export async function getIncident(token: string, id: string): Promise<IncidentListItem> {
+  const res = await fetch(`${getApiBaseUrl()}/incidents/${id}`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export type RecommendationItem = {
+  resource_id: string;
+  name: string;
+  distance_meters: number;
+  capability_match: boolean;
+  load: number;
+  score: number;
+  recommendation_reason: string;
+};
+
+export async function getRecommendations(
+  token: string,
+  incidentId: string,
+): Promise<{ items: RecommendationItem[]; empty_reason: string | null }> {
+  const res = await fetch(`${getApiBaseUrl()}/incidents/${incidentId}/recommendations`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export async function assignResource(
+  token: string,
+  incidentId: string,
+  body: { resource_id: string; decision: string; recommendation_reason?: string },
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${getApiBaseUrl()}/incidents/${incidentId}/assign`, {
+    method: "POST",
+    headers: { ...authHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return parseEnvelope(res);
+}
+
+export type AlertItem = {
+  id: string;
+  incident_id: string | null;
+  type: string;
+  message: string;
+  status: string;
+  created_at: string;
+};
+
+export async function listAlerts(
+  token: string,
+  params?: { status?: string },
+): Promise<{ items: AlertItem[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  const res = await fetch(`${getApiBaseUrl()}/alerts?${qs}`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export async function acknowledgeAlert(token: string, alertId: string): Promise<AlertItem> {
+  const res = await fetch(`${getApiBaseUrl()}/alerts/${alertId}/acknowledge`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+  });
+  return parseEnvelope(res);
+}
+
+export type AssignmentItem = {
+  id: string;
+  incident_id: string;
+  resource_id: string;
+  status: string;
+  decision: string;
+  assignee_user_id: string | null;
+  recommendation_reason: string | null;
+  created_at: string;
+  incident?: Record<string, unknown>;
+  resource?: Record<string, unknown>;
+};
+
+export async function listAssignments(token: string): Promise<{ items: AssignmentItem[] }> {
+  const res = await fetch(`${getApiBaseUrl()}/assignments`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export async function getAssignment(token: string, id: string): Promise<AssignmentItem> {
+  const res = await fetch(`${getApiBaseUrl()}/assignments/${id}`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export async function patchAssignmentStatus(
+  token: string,
+  id: string,
+  statusValue: string,
+): Promise<AssignmentItem> {
+  const res = await fetch(`${getApiBaseUrl()}/assignments/${id}/status`, {
+    method: "PATCH",
+    headers: { ...authHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify({ status: statusValue }),
+  });
+  return parseEnvelope(res);
+}
+
+export async function listNotifications(
+  token: string,
+): Promise<{ items: Array<{ id: string; content: string; channel: string; created_at: string }> }> {
+  const res = await fetch(`${getApiBaseUrl()}/notifications`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export function dashboardWsUrl(token: string): string {
+  const base = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws/dashboard";
+  const url = new URL(base);
+  url.searchParams.set("token", token);
+  return url.toString();
 }

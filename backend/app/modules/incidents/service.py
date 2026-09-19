@@ -105,6 +105,16 @@ class IncidentService:
                 incident.id,
                 [(c.name, c.contact) for c in body.trusted_contacts],
             )
+            from app.modules.notifications.service import NotificationService
+
+            await NotificationService(self.session).notify_trusted_contacts(incident)
+            await self.session.commit()
+            await self.session.refresh(incident)
+
+        if not reused:
+            from app.modules.alerts.service import AlertService
+
+            await AlertService(self.session).ensure_critical_for_incident(incident)
             await self.session.commit()
             await self.session.refresh(incident)
         return incident, reused

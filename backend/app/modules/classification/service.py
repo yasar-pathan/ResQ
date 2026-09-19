@@ -83,6 +83,10 @@ class ClassificationService:
         )
         await self.session.flush()
 
+        from app.modules.alerts.service import AlertService
+
+        await AlertService(self.session).ensure_critical_for_incident(incident)
+
         await publish_incident_update(
             {
                 "event": "incident.classified",

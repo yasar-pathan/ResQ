@@ -24,6 +24,9 @@ class Assignment(Base, TimestampMixin):
     assigned_by_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
+    assignee_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), index=True, nullable=True
+    )
     ai_recommended: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     recommendation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     decision: Mapped[AssignmentDecision] = mapped_column(

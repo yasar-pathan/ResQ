@@ -166,8 +166,43 @@ If frontend tests miss packages after dependency changes: `docker volume rm resc
 
 ## 6. Gate sign-off
 
-Phase 6 DoD: SOS ≤2 taps; report + tracker work against live API. Full dispatcher E2E-02 (PII/queue) waits for Phase 7.
+Phase 6 DoD: SOS ≤2 taps; report + tracker work against live API.
 
-## 7. Next
+## 7. Phase 7–8 — Dispatch, live dashboard, alerts, field team
 
-Phase 7 — dispatch recommendation, assignment, live dashboard.
+### Prerequisites
+
+```bash
+docker compose up -d
+docker compose run --rm migrate
+docker compose run --rm api python -m app.scripts.seed_dev
+```
+
+### Accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@rescuegrid.dev` | from `.env` `BOOTSTRAP_ADMIN_PASSWORD` |
+| Dispatcher | `dispatcher@rescuegrid.dev` | `ChangeMeOps123!` |
+| Field | `field@rescuegrid.dev` | `ChangeMeOps123!` |
+
+### Manual checks
+
+1. Open http://localhost:3000/login → sign in as dispatcher → `/dashboard` shows queue + map.
+2. Open a second browser session on `/dashboard`; create an incident via citizen `/report`; both dashboards should refresh via WebSocket within ~5s after classification.
+3. Open `/incidents/{id}` → Accept AI recommendation → resource becomes assigned; field user sees it under `/field/assignments`.
+4. Field user updates status en_route → on_scene → completed.
+5. Leave an incident unassigned past `DELAYED_RESPONSE_THRESHOLD_MINUTES` (or lower the env for demo) → `/alerts` shows delayed_response; Acknowledge clears it from active.
+6. SOS with trusted contact → check API logs for `SMS_SIMULATED` minimal payload (no full description).
+
+### Optional API smoke
+
+```bash
+# After login, export TOKEN=...
+curl -s http://localhost:8000/alerts -H "Authorization: Bearer $TOKEN"
+curl -s http://localhost:8000/notifications -H "Authorization: Bearer $TOKEN"
+```
+
+## 8. Next
+
+Phase 9 — analytics dashboard + hardened PII visibility across read paths.
