@@ -54,10 +54,10 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="relative inline-flex h-11 w-11 items-center justify-center rounded-control border border-border bg-surface text-slate-700 transition hover:bg-slate-50"
+          className="relative inline-flex h-10 w-10 items-center justify-center rounded-control text-slate-700 transition-colors hover:bg-slate-100"
           aria-label={`Alerts${alerts.length ? `, ${alerts.length} active` : ""}`}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5" strokeWidth={1.75} />
           {alerts.length > 0 ? (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-sos px-1 text-[11px] font-bold text-white">
               {alerts.length > 99 ? "99+" : alerts.length}
@@ -78,12 +78,18 @@ export function NotificationBell() {
         ) : null}
         <ul className="max-h-72 space-y-2 overflow-y-auto">
           {preview.map((a) => (
-            <li key={a.id} className="rounded-control border border-border bg-slate-50 p-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-primary">
-                {a.type.replaceAll("_", " ")}
-              </p>
-              <p className="mt-0.5 line-clamp-2 text-sm text-slate-800">{a.message}</p>
-              <p className="mt-1 text-xs text-muted">{relativeTime(a.created_at)}</p>
+            <li key={a.id}>
+              <Link
+                href={`/alerts?status=active&focus=${encodeURIComponent(a.id)}`}
+                className="block rounded-control border border-border bg-slate-50 p-2 no-underline transition-colors hover:border-primary hover:bg-white"
+                onClick={() => setOpen(false)}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                  {a.type.replaceAll("_", " ")}
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-sm text-slate-800">{a.message}</p>
+                <p className="mt-1 text-xs text-muted">{relativeTime(a.created_at)}</p>
+              </Link>
             </li>
           ))}
         </ul>

@@ -7,8 +7,10 @@ import "leaflet/dist/leaflet.css";
 import type { IncidentListItem, ResourceItem } from "@/lib/api/client";
 import { priorityColor, resourceStatusColor } from "@/components/maps/mapStyles";
 
-const DEFAULT_CENTER: [number, number] = [12.9716, 77.5946];
-const DEFAULT_ZOOM = 12;
+/** India geographic center — empty ops maps frame the country first. */
+const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629];
+const DEFAULT_ZOOM = 5;
+const FOCUS_ZOOM = 15;
 
 function tileUrl(): string {
   return process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -24,12 +26,14 @@ function circleIcon(color: string, selected = false): L.DivIcon {
   });
 }
 
-function squareIcon(color: string): L.DivIcon {
+function squareIcon(color: string, selected = false): L.DivIcon {
+  const size = selected ? 18 : 14;
+  const ring = selected ? "box-shadow:0 0 0 3px rgba(30,58,138,.45),0 1px 4px rgba(0,0,0,.35)" : "box-shadow:0 1px 4px rgba(0,0,0,.35)";
   return L.divIcon({
     className: "",
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-    html: `<span style="display:block;width:14px;height:14px;border-radius:3px;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<span style="display:block;width:${size}px;height:${size}px;border-radius:3px;background:${color};border:2px solid #fff;${ring}"></span>`,
   });
 }
 
@@ -45,7 +49,8 @@ export function FitBounds({
     if (selectedId) {
       const sel = points.find((p) => p.id === selectedId);
       if (sel) {
-        map.flyTo([sel.lat, sel.lng], Math.max(map.getZoom(), 14), { duration: 0.4 });
+        const targetZoom = Math.max(map.getZoom(), FOCUS_ZOOM);
+        map.flyTo([sel.lat, sel.lng], targetZoom, { duration: 1.1, easeLinearity: 0.25 });
         return;
       }
     }
@@ -70,6 +75,7 @@ export type OpsMapProps = {
   showResources?: boolean;
   selectedId?: string | null;
   onSelectIncident?: (id: string) => void;
+  onSelectResource?: (id: string) => void;
   className?: string;
   height?: string;
 };
@@ -81,6 +87,7 @@ export function OpsMap({
   showResources = true,
   selectedId = null,
   onSelectIncident,
+  onSelectResource,
   className = "",
   height = "100%",
 }: OpsMapProps) {
@@ -132,7 +139,10 @@ export function OpsMap({
               <Marker
                 key={r.id}
                 position={[r.location.latitude, r.location.longitude]}
-                icon={squareIcon(resourceStatusColor(r))}
+                icon={squareIcon(resourceStatusColor(r), selectedId === r.id)}
+                eventHandlers={{
+                  click: () => onSelectResource?.(r.id),
+                }}
               >
                 <Popup>
                   <strong>{r.name}</strong>

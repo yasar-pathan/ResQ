@@ -1,6 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { HotspotsMapDynamic } from "@/components/maps/HotspotsMapDynamic";
 import { ApiError, getApiBaseUrl } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 
@@ -10,6 +23,14 @@ type Overview = {
   resolved: number;
   critical: number;
   personal_safety_count: number;
+};
+
+const CHART_COLORS = {
+  active: "#0369a1",
+  resolved: "#15803d",
+  critical: "#dc2626",
+  other: "#64748b",
+  bars: ["#1e3a8a", "#0f766e", "#b45309", "#0369a1", "#7c3aed", "#15803d", "#dc2626"],
 };
 
 async function fetchAnalytics<T>(token: string, path: string): Promise<T> {
@@ -25,7 +46,7 @@ async function fetchAnalytics<T>(token: string, path: string): Promise<T> {
 }
 
 export default function AnalyticsPage() {
-  const { getToken } = useAuth();
+  const { getToken, loading: authLoading } = useAuth();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [categories, setCategories] = useState<Array<{ category: string; count: number }>>([]);
   const [delays, setDelays] = useState<{ assigned_count: number; avg_minutes_to_assign: number } | null>(
@@ -37,7 +58,10 @@ export default function AnalyticsPage() {
 
   const load = useCallback(async () => {
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [o, c, d, h] = await Promise.all([
@@ -68,81 +92,150 @@ export default function AnalyticsPage() {
   }, [getToken]);
 
   useEffect(() => {
+    if (authLoading) return;
     void load();
-  }, [load]);
+  }, [authLoading, load]);
+
+  const statusPie = useMemo(() => {
+    if (!overview) return [];
+    const other = Math.max(
+      0,
+      overview.total_incidents - overview.active - overview.resolved - overview.critical,
+    );
+    return [
+      { name: "Active", value: overview.active, color: CHART_COLORS.active },
+      { name: "Resolved", value: overview.resolved, color: CHART_COLORS.resolved },
+      { name: "Critical", value: overview.critical, color: CHART_COLORS.critical },
+      { name: "Other", value: other, color: CHART_COLORS.other },
+    ].filter((d) => d.value > 0);
+  }, [overview]);
+
+  const categoryBars = useMemo(
+    () =>
+      categories.map((c) => ({
+        name: c.category.replaceAll("_", " "),
+        count: c.count,
+      })),
+    [categories],
+  );
 
   return (
-    <div className="stack" style={{ gap: "1.5rem", maxWidth: 900 }}>
+    <div className="stack h-full min-h-0 overflow-y-auto" style={{ gap: "1.5rem", width: "100%" }}>
       <header>
-        <h1>Analytics</h1>
-        <p className="muted">Aggregate KPIs — no personal-safety identity fields</p>
+        <h1 className="font-display text-xl font-bold md:text-2xl">Analytics</h1>
+        <p className="text-sm text-muted">Aggregate KPIs — no personal-safety identity fields</p>
       </header>
-      {loading ? <p className="muted">Loading…</p> : null}
+      {loading || authLoading ? <p className="muted">Loading…</p> : null}
       {error ? <p className="form-error">{error}</p> : null}
-      {!loading && !overview ? <p className="empty-state">No analytics data in range.</p> : null}
+      {!loading && !authLoading && !overview && !error ? (
+        <p className="empty-state">No analytics data in range.</p>
+      ) : null}
+
       {overview ? (
-        <div className="kpi-row">
-          <div className="kpi">
-            <span className="muted">Total</span>
-            <strong>{overview.total_incidents}</strong>
+        <>
+          <div className="kpi-row">
+            <div className="kpi">
+              <span className="muted">Total</span>
+              <strong>{overview.total_incidents}</strong>
+            </div>
+            <div className="kpi">
+              <span className="muted">Active</span>
+              <strong>{overview.active}</strong>
+            </div>
+            <div className="kpi">
+              <span className="muted">Resolved</span>
+              <strong>{overview.resolved}</strong>
+            </div>
+            <div className="kpi">
+              <span className="muted">Critical</span>
+              <strong>{overview.critical}</strong>
+            </div>
+            <div className="kpi">
+              <span className="muted">Personal safety (count only)</span>
+              <strong>{overview.personal_safety_count}</strong>
+            </div>
           </div>
-          <div className="kpi">
-            <span className="muted">Active</span>
-            <strong>{overview.active}</strong>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="rounded-panel border border-border bg-surface p-4">
+              <h2 className="mb-3 text-base font-bold">Status distribution</h2>
+              {statusPie.length === 0 ? (
+                <p className="empty-state">No status slices yet.</p>
+              ) : (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusPie}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={58}
+                        outerRadius={88}
+                        paddingAngle={2}
+                      >
+                        {statusPie.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-panel border border-border bg-surface p-4">
+              <h2 className="mb-3 text-base font-bold">Response delays</h2>
+              {delays ? (
+                <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
+                  <p className="text-sm text-muted">Avg minutes to first assignment</p>
+                  <p className="font-display text-5xl font-bold text-slate-900">
+                    {delays.avg_minutes_to_assign}
+                  </p>
+                  <p className="text-sm text-muted">{delays.assigned_count} assigned incidents</p>
+                </div>
+              ) : (
+                <p className="empty-state">No delay metrics.</p>
+              )}
+            </section>
           </div>
-          <div className="kpi">
-            <span className="muted">Resolved</span>
-            <strong>{overview.resolved}</strong>
-          </div>
-          <div className="kpi">
-            <span className="muted">Critical</span>
-            <strong>{overview.critical}</strong>
-          </div>
-          <div className="kpi">
-            <span className="muted">Personal safety (count only)</span>
-            <strong>{overview.personal_safety_count}</strong>
-          </div>
-        </div>
+        </>
       ) : null}
-      {delays ? (
-        <section>
-          <h2>Response delays</h2>
-          <p>
-            Avg minutes to first assignment: <strong>{delays.avg_minutes_to_assign}</strong> (
-            {delays.assigned_count} assigned)
-          </p>
-        </section>
-      ) : null}
-      <section>
-        <h2>By category</h2>
-        {categories.length === 0 ? (
+
+      <section className="rounded-panel border border-border bg-surface p-4">
+        <h2 className="mb-3 text-base font-bold">By category</h2>
+        {categoryBars.length === 0 ? (
           <p className="empty-state">No category data.</p>
         ) : (
-          <ul className="field-list">
-            {categories.map((c) => (
-              <li key={c.category} className="field-card">
-                <strong>{c.category.replaceAll("_", " ")}</strong>
-                <span>{c.count}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={categoryBars} margin={{ top: 8, right: 12, left: 0, bottom: 48 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {categoryBars.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS.bars[i % CHART_COLORS.bars.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </section>
-      <section>
-        <h2>Hotspots (anonymized buckets)</h2>
+
+      <section className="rounded-panel border border-border bg-surface p-4">
+        <h2 className="mb-1 text-base font-bold">Hotspots (anonymized buckets)</h2>
+        <p className="mb-3 text-sm text-muted">Incident density across India — no personal identifiers.</p>
         {hotspots.length === 0 ? (
           <p className="empty-state">No hotspot data.</p>
         ) : (
-          <ul className="field-list">
-            {hotspots.map((h) => (
-              <li key={`${h.lat}-${h.lng}`} className="field-card">
-                <strong>
-                  {h.lat}, {h.lng}
-                </strong>
-                <span>{h.count} incidents</span>
-              </li>
-            ))}
-          </ul>
+          <div className="min-h-[420px]">
+            <HotspotsMapDynamic points={hotspots} height={420} />
+          </div>
         )}
       </section>
     </div>

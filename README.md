@@ -1,6 +1,6 @@
 # RescueGrid
 
-Emergency response coordination platform (Bit N Build PS-9). Architecture and requirements live in `01_PRD.md` through `07_IMPLEMENTATION_ROADMAP.md`.
+Emergency response coordination platform (Bit N Build PS-9). Architecture and requirements live in [`docs/01_PRD.md`](docs/01_PRD.md) through [`docs/07_IMPLEMENTATION_ROADMAP.md`](docs/07_IMPLEMENTATION_ROADMAP.md).
 
 ## Prerequisites
 
@@ -94,7 +94,7 @@ curl -s -X POST http://localhost:8000/incidents \
   -d '{"category":"fire","description":"Smoke reported","location":{"latitude":12.9716,"longitude":77.5946},"source":"citizen_web","idempotency_key":"demo-key-12345678"}'
 ```
 
-Manual verification steps: see [MANUAL_TASKS.md](MANUAL_TASKS.md).
+Manual verification steps: see [docs/MANUAL_TASKS.md](docs/MANUAL_TASKS.md).
 
 ### Citizen UI and SOS (Phase 6)
 
@@ -155,7 +155,7 @@ Incident APIs return `ai_summary` / `classification_source`. Personal-safety rep
 
 - Logo and photography live under `frontend/public/brand/` and `frontend/public/media/`.
 - Citizen home is a full-bleed hero; auth pages use a split visual layout.
-- **Phone access without an app store:** open the site in the mobile browser, or **Add to Home Screen** (PWA). See `MANUAL_TASKS.md` § Phase 13. No native Android/iOS builds.
+- **Phone access without an app store:** open the site in the mobile browser, or **Add to Home Screen** (PWA). See [docs/MANUAL_TASKS.md](docs/MANUAL_TASKS.md). No native Android/iOS builds.
 
 ### AI triage worker (Phase 5)
 
@@ -175,11 +175,12 @@ After `POST /incidents`, expect `classification_queue.status=done` and `incident
 
 - LLM, email, and object storage keys are optional until later roadmap phases.
 - SMS/push notifications are simulated in product scope (not wired in Phase 0).
-- `08_IDE_IMPLEMENTATION_PROMPT.md` holds the Final Verification checklist (Doc 04 §S).
-- Operator runbook: `MANUAL_TASKS.md`. Final report: `FINAL_IMPLEMENTATION_REPORT.md`.
+- [`docs/08_IDE_IMPLEMENTATION_PROMPT.md`](docs/08_IDE_IMPLEMENTATION_PROMPT.md) holds the Final Verification checklist (Doc 04 §S).
+- Operator runbook: [`docs/MANUAL_TASKS.md`](docs/MANUAL_TASKS.md). Final report: [`docs/FINAL_IMPLEMENTATION_REPORT.md`](docs/FINAL_IMPLEMENTATION_REPORT.md).
 
 ## Project layout
 
+- `docs/` — PRD, architecture, design rules, roadmap, operator runbook, implementation report (flat; no subfolders)
 - `backend/` — FastAPI (`api`) and background `worker` (same image, different commands)
 - `frontend/` — Next.js App Router
 - `docker-compose.yml` — single-network dev execution environment

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StatusPill } from "@/components/domain/StatusPill";
 import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
 import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
@@ -13,7 +14,7 @@ import {
   type IncidentListItem,
   type ResourceItem,
 } from "@/lib/api/client";
-import { useAuth } from "@/lib/auth";
+import { useAuth, withAuthRetry } from "@/lib/auth";
 import { INCIDENT_CATEGORIES } from "@/lib/reportValidation";
 
 function priorityRank(p: string | null | undefined): number {
@@ -32,34 +33,63 @@ function sortQueue(items: IncidentListItem[]): IncidentListItem[] {
   });
 }
 
-export default function DashboardPage() {
-  const { getToken } = useAuth();
+function DashboardInner() {
+  const { getToken, refreshSession } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const filterCategory = searchParams.get("category") ?? "";
+  const filterPriority = searchParams.get("priority") ?? "";
+  const filterStatus = searchParams.get("status") ?? "";
+  const selectedId = searchParams.get("selected");
+
   const [incidents, setIncidents] = useState<IncidentListItem[]>([]);
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [wsState, setWsState] = useState<"connecting" | "live" | "degraded">("connecting");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterPriority, setFilterPriority] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
   const [showIncidents, setShowIncidents] = useState(true);
   const [showResources, setShowResources] = useState(true);
 
+  const patchParams = useCallback(
+    (mutate: (qs: URLSearchParams) => void) => {
+      const qs = new URLSearchParams(searchParams.toString());
+      mutate(qs);
+      const next = qs.toString();
+      router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const setFilter = (key: "category" | "priority" | "status", value: string) => {
+    patchParams((qs) => {
+      if (value) qs.set(key, value);
+      else qs.delete(key);
+    });
+  };
+
+  const setSelectedId = (id: string | null) => {
+    patchParams((qs) => {
+      if (id) qs.set("selected", id);
+      else qs.delete("selected");
+    });
+  };
+
   const load = useCallback(async () => {
-    const token = getToken();
-    if (!token) return;
     setLoading(true);
     try {
-      const [incData, resData] = await Promise.all([
-        listIncidents(token, {
-          limit: 50,
-          category: filterCategory || undefined,
-          priority: filterPriority || undefined,
-          status: filterStatus || undefined,
-        }),
-        listResources(token),
-      ]);
+      const [incData, resData] = await withAuthRetry(getToken, refreshSession, async (token) => {
+        const [incidentsRes, resourcesRes] = await Promise.all([
+          listIncidents(token, {
+            limit: 50,
+            category: filterCategory || undefined,
+            priority: filterPriority || undefined,
+            status: filterStatus || undefined,
+          }),
+          listResources(token),
+        ]);
+        return [incidentsRes, resourcesRes] as const;
+      });
       setIncidents(sortQueue(incData.items));
       setResources(resData.items);
       setError(null);
@@ -68,7 +98,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [getToken, filterCategory, filterPriority, filterStatus]);
+  }, [getToken, refreshSession, filterCategory, filterPriority, filterStatus]);
 
   useEffect(() => {
     void load();
@@ -110,7 +140,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="dashboard-ops flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col gap-3 overflow-hidden">
+    <div className="dashboard-ops flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       {wsState === "degraded" ? (
         <div className="ws-banner shrink-0" role="status">
           Live connection lost — reconnecting. Showing last REST snapshot.
@@ -125,11 +155,11 @@ export default function DashboardPage() {
             {incidents.length} in queue
           </p>
         </div>
-        <div className="filter-row flex flex-wrap gap-2">
+        <div className="filter-row !mt-0 flex flex-wrap gap-2">
           <select
             className="field"
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
+            onChange={(e) => setFilter("category", e.target.value)}
             aria-label="Filter category"
           >
             <option value="">All categories</option>
@@ -142,7 +172,7 @@ export default function DashboardPage() {
           <select
             className="field"
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
+            onChange={(e) => setFilter("priority", e.target.value)}
             aria-label="Filter priority"
           >
             <option value="">All priorities</option>
@@ -154,7 +184,7 @@ export default function DashboardPage() {
           <select
             className="field"
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => setFilter("status", e.target.value)}
             aria-label="Filter status"
           >
             <option value="">All statuses</option>
@@ -169,7 +199,7 @@ export default function DashboardPage() {
 
       {error ? <p className="form-error shrink-0">{error}</p> : null}
 
-      <div className="dashboard-ops-grid grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(300px,380px)_1fr]">
+      <div className="dashboard-ops-grid grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(280px,360px)_1fr]">
         <section
           className="queue-panel flex min-h-0 flex-col overflow-hidden rounded-panel border border-border bg-surface"
           aria-label="Incident queue"
@@ -244,7 +274,7 @@ export default function DashboardPage() {
               </label>
             </div>
           </div>
-          <div className="relative min-h-[50dvh] flex-1 lg:min-h-0">
+          <div className="relative min-h-[45dvh] flex-1 lg:min-h-0">
             <OpsMapDynamic
               incidents={incidents}
               resources={resources}
@@ -284,5 +314,13 @@ export default function DashboardPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="ops-loading">Loading dashboard…</div>}>
+      <DashboardInner />
+    </Suspense>
   );
 }

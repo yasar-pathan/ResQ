@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, FileWarning } from "lucide-react";
+import { BrandMark } from "@/components/layout/BrandMark";
 import { InstallHint } from "@/components/layout/InstallHint";
 
 export default function HomePage() {
@@ -10,6 +11,9 @@ export default function HomePage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/media/help-desk-mobile.jpg" alt="" className="home-hero-img" />
           <div className="home-hero-veil" />
+        </div>
+        <div className="home-hero-brand">
+          <BrandMark href="/" size={36} variant="light" />
         </div>
         <div className="home-hero-content animate-enter">
           <p className="home-eyebrow">Emergency coordination</p>
@@ -27,12 +31,11 @@ export default function HomePage() {
               SOS
             </Link>
           </div>
+          <div className="home-hero-meta animate-enter-delay">
+            <InstallHint />
+          </div>
         </div>
-      </section>
-
-      <section className="home-footer-links animate-enter-delay">
-        <InstallHint />
-        <p className="muted">
+        <p className="home-hero-links home-hero-links-centered animate-enter-delay">
           Dispatcher or field team? <Link href="/login">Operator sign-in</Link>
           {" · "}
           <Link href="/register">Create citizen account</Link>

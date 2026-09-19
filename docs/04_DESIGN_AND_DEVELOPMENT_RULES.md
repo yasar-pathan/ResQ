@@ -2,13 +2,23 @@
 
 This is the binding engineering rulebook for anyone — human or AI coding agent — implementing RescueGrid. Violations of these rules are treated as defects, not stylistic disagreements.
 
+All project documents live flat under `docs/` (no subdirectories). Agents MUST read and update files there; the repo-root `README.md` is the entrypoint only.
+
+### Agent Compact Mandate
+
+These apply on every turn before any other style preference:
+
+1. **Minimal tokens, maximum output** — Answer with the useful result only. No filler, no restating the ask, no policy dumps, no “I’ll continue / as requested” preambles.
+2. **Analyze → plan → implement** — Inspect evidence (code, logs, runtime) first; form a short plan; then ship the **smallest correct fix**. Drive-by refactors and speculative abstractions are defects.
+3. **Doc/code drift is a defect** — Oversized diffs, silent documentation lag, and unfinished local-only work that was meant to ship are treated like bugs.
+
 ## Section A — Source of Truth Hierarchy
 
 1. Bit N Build'26 Problem Statement PS-9 (original text)
-2. `01_PRD.md` (approved)
-3. `03_BACKEND_ARCHITECTURE.md` (approved)
-4. `02_FRONTEND_DESIGN.md` (approved)
-5. This document (`04_DESIGN_AND_DEVELOPMENT_RULES.md`)
+2. `docs/01_PRD.md` (approved)
+3. `docs/03_BACKEND_ARCHITECTURE.md` (approved)
+4. `docs/02_FRONTEND_DESIGN.md` (approved)
+5. This document (`docs/04_DESIGN_AND_DEVELOPMENT_RULES.md`)
 6. Existing implementation in the repository
 7. Developer/agent assumptions
 
@@ -16,7 +26,15 @@ If two documents conflict (e.g., a route named differently in `01_PRD.md` vs `03
 
 ## Section B — Before Writing Code
 
-Before any implementation work, the agent MUST: read all 8 documents in this set; inspect the current repository state (if one exists) for framework/dependency versions, existing routes/models/components, environment configuration, and test setup; identify what is already implemented vs. missing vs. broken; identify reusable code before writing new code. Never overwrite existing working functionality blindly.
+Before any implementation work, the agent MUST:
+
+1. Read the relevant documents in this `docs/` set (full set when starting a phase; targeted docs when fixing a narrow bug).
+2. Inspect repository and runtime evidence — framework/dependency versions, existing routes/models/components, env/Compose config, failing logs, test setup.
+3. State the concrete problem (what is broken or missing) before changing code.
+4. Identify what is already implemented vs. missing vs. broken; reuse existing code before writing new code.
+5. Plan the minimal fix that closes the gap; implement only that; verify.
+
+Never overwrite existing working functionality blindly. Never expand scope into adjacent “while I’m here” cleanups unless the user asked for them.
 
 ## Section C — Implementation Strategy
 
@@ -78,10 +96,29 @@ Avoid: N+1 queries (use SQLAlchemy eager-loading for incident+media, assignment+
 
 Small, logical commits; one feature or one fix per commit/checkpoint; commit messages describe the actual change (`feat: implement SOS quick-report intake (F-02)`, not `updates`). Do not mix feature work, dependency bumps, and formatting changes in a single commit unless genuinely unavoidable. Every checkpoint leaves the project in a runnable, test-passing state.
 
+After a complete change set is verified (lint/tests green, docs synced when required): **commit with a relevant message and push to the remote** unless the user explicitly forbids push. Finished work left only on the local machine is incomplete delivery. Never commit `.env`, API keys, or credentials.
+
 ## Section R — Documentation Synchronization
 
-Any change to an API shape, DB schema, UX state, or architectural decision requires the corresponding update in the relevant document(s) from this 8-document set in the same change/PR — documentation describing a system that no longer exists is treated as a defect equal in severity to a code bug.
+Any change to an API shape, DB schema, UX state, configuration, or architectural decision requires the corresponding update in the relevant document(s) from this set **and** an entry in `FINAL_IMPLEMENTATION_REPORT.md` when a refactor or config shipped — in the same change/PR. Documentation describing a system that no longer exists is treated as a defect equal in severity to a code bug. All docs stay flat under `docs/` (no nested doc folders).
 
 ## Section S — Final Verification
 
 Before declaring RescueGrid complete, verify against `07_IMPLEMENTATION_ROADMAP.md`'s Phase 11 gate and the Final Verification checklist embedded in `08_IDE_IMPLEMENTATION_PROMPT.md`. This includes explicit manual walk-throughs of journeys J1–J5, confirmation that SEC-011/012 hold under an actual unauthorized-access test attempt (not just code review), and confirmation that the LLM-outage fallback path has been exercised at least once with the real API key removed.
+
+## Section T — Standard Session Workflow
+
+Every agent session follows this loop. Skip a step only when it clearly does not apply (e.g., docs-only change needs no Docker rebuild).
+
+| Step | When | Action |
+|------|------|--------|
+| 1. Sync | First time on a machine, or after others pushed | `git pull` (or clone). If no `.env`, copy `.env.example` → `.env`. |
+| 2. Bring stack up | Fresh setup or after Compose/Dockerfile/dep changes | `docker compose up -d --build` (recreate affected services). |
+| 3. Analyze | Before coding | Evidence first (code + logs). State problem → plan → minimal fix (see Compact Mandate + §B). |
+| 4. Implement | During work | Smallest correct change; no drive-by scope. |
+| 5. Verify | Before claiming done | `bash scripts/lint-gate.sh` (or container equivalents: ruff, frontend lint/test, pytest). Fix failures. |
+| 6. Docker hygiene | CSS/JS 404s or stale Next chunks | Wipe volume `rescuegrid_frontend_next`, recreate `frontend`. Dockerfile clears `.next` on start; the named volume can still go stale. |
+| 7. Document | Any refactor/config/UX delivery | Append/organize in `FINAL_IMPLEMENTATION_REPORT.md`; keep `MANUAL_TASKS.md` to remaining operator work only. |
+| 8. Ship | After the whole change set | Commit with an appropriate message → **push to origin** (unless user forbids push). |
+
+Operator knobs and cloud steps: `MANUAL_TASKS.md`. Living delivery record: `FINAL_IMPLEMENTATION_REPORT.md`.

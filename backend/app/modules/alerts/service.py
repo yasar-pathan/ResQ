@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.events import publish_incident_update
 from app.core.exceptions import ConflictError, NotFoundError
+from app.db.geo import point_to_lat_lng
 from app.models.alert import Alert
 from app.models.audit_log import AuditLog
 from app.models.enums import AlertStatus, AlertType
@@ -24,7 +25,21 @@ from app.modules.alerts.rules import (
 from app.modules.notifications.service import NotificationService
 
 
-def serialize_alert(row: Alert) -> dict:
+def serialize_alert(row: Alert, incident: Incident | None = None) -> dict:
+    location = None
+    tracking_ref = None
+    category = None
+    priority = None
+    if incident is not None:
+        try:
+            lat, lng = point_to_lat_lng(incident.location)
+            location = {"latitude": lat, "longitude": lng}
+        except (ValueError, TypeError, AttributeError):
+            location = None
+        tracking_ref = incident.tracking_ref
+        category = incident.category.value if incident.category else None
+        priority = incident.priority.value if incident.priority else None
+
     return {
         "id": str(row.id),
         "incident_id": str(row.incident_id) if row.incident_id else None,
@@ -36,6 +51,10 @@ def serialize_alert(row: Alert) -> dict:
         else None,
         "created_at": row.created_at.isoformat(),
         "updated_at": row.updated_at.isoformat(),
+        "location": location,
+        "tracking_ref": tracking_ref,
+        "category": category,
+        "priority": priority,
     }
 
 
@@ -134,8 +153,18 @@ class AlertService:
                 .limit(limit)
             )
         ).scalars().all()
+        incident_ids = [a.incident_id for a in rows if a.incident_id]
+        incidents: dict = {}
+        if incident_ids:
+            loaded = (
+                await self.session.execute(select(Incident).where(Incident.id.in_(incident_ids)))
+            ).scalars().all()
+            incidents = {i.id: i for i in loaded}
         return {
-            "items": [serialize_alert(a) for a in rows],
+            "items": [
+                serialize_alert(a, incidents.get(a.incident_id) if a.incident_id else None)
+                for a in rows
+            ],
             "total": int(total),
             "page": page,
             "limit": limit,
@@ -160,6 +189,9 @@ class AlertService:
         )
         await self.session.commit()
         await self.session.refresh(alert)
+        incident = None
+        if alert.incident_id:
+            incident = await self.session.get(Incident, alert.incident_id)
         await publish_incident_update(
             {
                 "event": "alert.acknowledged",
@@ -167,4 +199,4 @@ class AlertService:
                 "incident_id": str(alert.incident_id) if alert.incident_id else None,
             }
         )
-        return serialize_alert(alert)
+        return serialize_alert(alert, incident)

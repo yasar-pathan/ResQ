@@ -82,7 +82,7 @@ export default function IncidentDetailPage() {
   }
 
   return (
-    <div className="stack" style={{ gap: "1.5rem", maxWidth: 720 }}>
+    <div className="stack h-full min-h-0 overflow-y-auto" style={{ gap: "1.5rem", width: "100%", maxWidth: 960 }}>
       <Link href="/dashboard" className="muted">
         ← Dashboard
       </Link>

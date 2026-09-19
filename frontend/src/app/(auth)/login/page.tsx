@@ -40,18 +40,18 @@ function LoginForm() {
   }
 
   return (
-    <div className="auth-page auth-page-split">
-      <div className="auth-visual" aria-hidden>
+    <div className="auth-page auth-login-tire">
+      <div className="auth-tire-bg" aria-hidden>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/media/ambulance-night-response.jpg" alt="" />
-        <div className="auth-visual-caption">
-          <BrandMark href="/" size={48} variant="light" />
-          <p>Response anytime — coordinated, calm, ready.</p>
-        </div>
+        <img src="/media/rescue-tire.png" alt="" />
       </div>
-      <div className="auth-panel animate-enter">
+      <div className="auth-tire-brand">
+        <BrandMark href="/" size={36} variant="light" />
+        <p>Ready when help is needed.</p>
+      </div>
+      <div className="auth-panel auth-tire-panel animate-enter">
         <p className="home-eyebrow">Operator access</p>
-        <BrandMark href="/" size={40} />
+        <BrandMark href="/" size={28} />
         <p className="muted" style={{ marginTop: "0.75rem" }}>
           Sign in to dispatch, alerts, or field assignments.
         </p>

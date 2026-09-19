@@ -31,7 +31,7 @@ export default function LocationPickerMap({
   onPick: (lat: number, lng: number) => void;
 }) {
   const [center] = useState<[number, number]>(() =>
-    latitude != null && longitude != null ? [latitude, longitude] : [12.9716, 77.5946],
+    latitude != null && longitude != null ? [latitude, longitude] : [20.5937, 78.9629],
   );
   const url =
     process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";

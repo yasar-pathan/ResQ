@@ -12,12 +12,12 @@ export function SOSButton({ onActivate, disabled, label = "Send SOS" }: SOSButto
   return (
     <button
       type="button"
-      className="btn btn-sos sos-pulse"
+      className="btn btn-sos btn-sos-square sos-pulse"
       disabled={disabled}
       onClick={onActivate}
       aria-label={label}
     >
-      <AlertTriangle size={28} aria-hidden />
+      <AlertTriangle size={32} aria-hidden />
       SOS
     </button>
   );

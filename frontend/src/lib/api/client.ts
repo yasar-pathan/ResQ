@@ -184,6 +184,15 @@ export async function login(email: string, password: string): Promise<TokenPair>
   return parseEnvelope<TokenPair>(res);
 }
 
+export async function refreshTokens(refreshToken: string): Promise<TokenPair> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  return parseEnvelope<TokenPair>(res);
+}
+
 export async function registerCitizen(input: {
   name: string;
   email: string;
@@ -345,6 +354,10 @@ export type AlertItem = {
   message: string;
   status: string;
   created_at: string;
+  location?: { latitude: number; longitude: number } | null;
+  tracking_ref?: string | null;
+  category?: string | null;
+  priority?: string | null;
 };
 
 export async function listAlerts(

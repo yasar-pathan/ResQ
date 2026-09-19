@@ -10,7 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ApiError, getMe, login as apiLogin, type UserPublic } from "@/lib/api/client";
+import {
+  ApiError,
+  getMe,
+  login as apiLogin,
+  refreshTokens as apiRefresh,
+  type UserPublic,
+} from "@/lib/api/client";
 
 const ACCESS_KEY = "rg_access_token";
 const REFRESH_KEY = "rg_refresh_token";
@@ -24,9 +30,12 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<UserPublic>;
   logout: () => void;
   getToken: () => string | null;
+  refreshSession: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+let refreshInFlight: Promise<string | null> | null = null;
 
 function setSessionCookies(role: string) {
   const maxAge = 60 * 60 * 12;
@@ -44,6 +53,37 @@ export function getStoredAccessToken(): string | null {
   return localStorage.getItem(ACCESS_KEY);
 }
 
+function getStoredRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+/** Attempt one refresh; coalesces concurrent callers. Returns new access token or null. */
+export async function tryRefreshAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const refresh = getStoredRefreshToken();
+    if (!refresh) return null;
+    try {
+      const tokens = await apiRefresh(refresh);
+      localStorage.setItem(ACCESS_KEY, tokens.access_token);
+      localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
+      return tokens.access_token;
+    } catch {
+      localStorage.removeItem(ACCESS_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+      clearSessionCookies();
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
 export function AuthProvider({
   children,
   requireAuth = false,
@@ -59,27 +99,74 @@ export function AuthProvider({
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const token = getStoredAccessToken();
-    if (!token) {
-      clearSessionCookies();
-      setLoading(false);
-      return;
-    }
+  const applyUser = useCallback((me: UserPublic, token: string) => {
+    setUser(me);
     setAccessToken(token);
-    getMe(token)
-      .then((me) => {
-        setUser(me);
-        setSessionCookies(me.role);
-      })
-      .catch(() => {
-        localStorage.removeItem(ACCESS_KEY);
-        localStorage.removeItem(REFRESH_KEY);
-        clearSessionCookies();
-        setAccessToken(null);
-      })
-      .finally(() => setLoading(false));
+    setSessionCookies(me.role);
   }, []);
+
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    clearSessionCookies();
+    setAccessToken(null);
+    setUser(null);
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const token = await tryRefreshAccessToken();
+    if (!token) {
+      clearSession();
+      return null;
+    }
+    try {
+      const me = await getMe(token);
+      applyUser(me, token);
+      return token;
+    } catch {
+      clearSession();
+      return null;
+    }
+  }, [applyUser, clearSession]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrap() {
+      const token = getStoredAccessToken();
+      if (!token) {
+        clearSessionCookies();
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      setAccessToken(token);
+      try {
+        const me = await getMe(token);
+        if (!cancelled) applyUser(me, token);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          const refreshed = await tryRefreshAccessToken();
+          if (refreshed) {
+            try {
+              const me = await getMe(refreshed);
+              if (!cancelled) applyUser(me, refreshed);
+              return;
+            } catch {
+              /* fall through */
+            }
+          }
+        }
+        if (!cancelled) clearSession();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyUser, clearSession]);
 
   useEffect(() => {
     if (loading || !requireAuth) return;
@@ -93,25 +180,22 @@ export function AuthProvider({
     }
   }, [loading, requireAuth, user, roles, router, pathname]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const tokens = await apiLogin(email, password);
-    localStorage.setItem(ACCESS_KEY, tokens.access_token);
-    localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
-    setAccessToken(tokens.access_token);
-    const me = await getMe(tokens.access_token);
-    setSessionCookies(me.role);
-    setUser(me);
-    return me;
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const tokens = await apiLogin(email, password);
+      localStorage.setItem(ACCESS_KEY, tokens.access_token);
+      localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
+      const me = await getMe(tokens.access_token);
+      applyUser(me, tokens.access_token);
+      return me;
+    },
+    [applyUser],
+  );
 
   const logout = useCallback(() => {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    clearSessionCookies();
-    setAccessToken(null);
-    setUser(null);
+    clearSession();
     router.push("/login");
-  }, [router]);
+  }, [clearSession, router]);
 
   const value = useMemo(
     () => ({
@@ -121,8 +205,9 @@ export function AuthProvider({
       login,
       logout,
       getToken: () => accessToken ?? getStoredAccessToken(),
+      refreshSession,
     }),
-    [user, accessToken, loading, login, logout],
+    [user, accessToken, loading, login, logout, refreshSession],
   );
 
   if (requireAuth && loading) {
@@ -130,6 +215,9 @@ export function AuthProvider({
   }
   if (requireAuth && !user) {
     return <div className="ops-loading">Redirecting to login…</div>;
+  }
+  if (requireAuth && roles && user && !roles.includes(user.role)) {
+    return <div className="ops-loading">Redirecting…</div>;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -145,4 +233,22 @@ export function useAuth(): AuthContextValue {
 
 export function isApiUnauthorized(err: unknown): boolean {
   return err instanceof ApiError && err.status === 401;
+}
+
+/** Run an authenticated call; on 401 refresh once and retry. */
+export async function withAuthRetry<T>(
+  getToken: () => string | null,
+  refreshSession: () => Promise<string | null>,
+  fn: (token: string) => Promise<T>,
+): Promise<T> {
+  const token = getToken();
+  if (!token) throw new ApiError(401, "unauthorized", "Not signed in");
+  try {
+    return await fn(token);
+  } catch (err) {
+    if (!isApiUnauthorized(err)) throw err;
+    const next = await refreshSession();
+    if (!next) throw err;
+    return fn(next);
+  }
 }

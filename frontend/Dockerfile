@@ -11,4 +11,5 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]
+# Clear stale Next.js chunks on start (directory may be a Docker volume mount)
+CMD ["sh", "-c", "mkdir -p .next && find .next -mindepth 1 -delete 2>/dev/null; npm run dev -- -H 0.0.0.0 -p 3000"]
