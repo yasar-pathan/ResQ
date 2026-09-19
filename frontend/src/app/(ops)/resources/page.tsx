@@ -1,6 +1,10 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
+import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
+import { resourceStatusColor } from "@/components/maps/mapStyles";
+import { Button } from "@/components/ui/Button";
 import {
   ApiError,
   createResource,
@@ -12,6 +16,11 @@ import { useAuth } from "@/lib/auth";
 
 const RESOURCE_TYPES = ["team", "vehicle", "equipment", "facility"] as const;
 
+function statusLabel(r: ResourceItem): string {
+  if (r.is_active === false) return "Inactive";
+  return r.status;
+}
+
 export default function ResourcesPage() {
   const { getToken, user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -22,18 +31,22 @@ export default function ResourcesPage() {
   const [type, setType] = useState<(typeof RESOURCE_TYPES)[number]>("team");
   const [lat, setLat] = useState("12.9716");
   const [lng, setLng] = useState("77.5946");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const load = useCallback(async () => {
     const token = getToken();
     if (!token) return;
     try {
-      const data = await listResources(token, { active_only: false });
+      const data = await listResources(token, {
+        active_only: false,
+        status: statusFilter || undefined,
+      });
       setItems(data.items);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load resources");
     }
-  }, [getToken]);
+  }, [getToken, statusFilter]);
 
   useEffect(() => {
     void load();
@@ -71,96 +84,137 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="stack" style={{ gap: "1.5rem" }}>
-      <div className="page-media-banner page-media-banner-wide" aria-hidden>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/media/resources-arrived-success.jpg" alt="" />
-      </div>
-      <header>
-        <h1>Resources</h1>
-        <p className="muted">Inventory of response units available for assignment</p>
+    <div className="flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col gap-4 overflow-hidden">
+      <header className="shrink-0">
+        <h1 className="font-display text-xl font-bold md:text-2xl">Resources</h1>
+        <p className="text-sm text-muted">Inventory and map of response units</p>
       </header>
-      {error ? <p className="form-error">{error}</p> : null}
-      {message ? <p className="form-success">{message}</p> : null}
 
-      {isAdmin ? (
-        <form className="stack" style={{ maxWidth: 520, gap: "0.75rem" }} onSubmit={onCreate}>
-          <h2 style={{ fontSize: "1.1rem" }}>Add resource</h2>
-          <input
-            className="field"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <select className="field" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
-            {RESOURCE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <div className="filter-row">
-            <input
-              className="field"
-              placeholder="Latitude"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              required
-            />
-            <input
-              className="field"
-              placeholder="Longitude"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
-              required
+      {error ? <p className="form-error shrink-0">{error}</p> : null}
+      {message ? <p className="form-success shrink-0">{message}</p> : null}
+
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_minmax(300px,400px)]">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-panel border border-border bg-surface">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <h2 className="text-base font-bold">Map</h2>
+            <div className="flex flex-wrap gap-3 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#15803d" }} />
+                Available
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#d97706" }} />
+                Assigned
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#94a3b8" }} />
+                Unavailable / inactive
+              </span>
+            </div>
+          </div>
+          <div className="relative min-h-[45dvh] flex-1 lg:min-h-0">
+            <OpsMapDynamic
+              resources={items}
+              showIncidents={false}
+              showResources
+              height="100%"
+              className="absolute inset-0 rounded-none border-0"
             />
           </div>
-          <button className="btn btn-primary" type="submit">
-            Create
-          </button>
-        </form>
-      ) : null}
+        </section>
 
-      <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Location</th>
-              {isAdmin ? <th /> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={isAdmin ? 5 : 4} className="muted">
-                  No resources yet.
-                </td>
-              </tr>
-            ) : (
-              items.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.name}</td>
-                  <td>{r.type}</td>
-                  <td>{r.status}</td>
-                  <td>
-                    {r.location.latitude.toFixed(4)}, {r.location.longitude.toFixed(4)}
-                  </td>
-                  {isAdmin ? (
-                    <td>
-                      <button type="button" className="btn btn-ghost" onClick={() => void onDeactivate(r.id)}>
+        <section className="flex min-h-0 flex-col gap-3 overflow-hidden">
+          <div className="shrink-0">
+            <select
+              className="field"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Resource status filter"
+            >
+              <option value="">All statuses</option>
+              <option value="available">Available</option>
+              <option value="assigned">Assigned</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </div>
+
+          {isAdmin ? (
+            <form className="stack shrink-0 gap-2 rounded-panel border border-border bg-surface p-3" onSubmit={onCreate}>
+              <h2 className="text-sm font-bold">Add resource</h2>
+              <input
+                className="field"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <select
+                className="field"
+                value={type}
+                onChange={(e) => setType(e.target.value as typeof type)}
+              >
+                {RESOURCE_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <div className="filter-row">
+                <input
+                  className="field"
+                  placeholder="Latitude"
+                  value={lat}
+                  onChange={(e) => setLat(e.target.value)}
+                  required
+                />
+                <input
+                  className="field"
+                  placeholder="Longitude"
+                  value={lng}
+                  onChange={(e) => setLng(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" size="sm">
+                Create
+              </Button>
+            </form>
+          ) : null}
+
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-panel border border-border bg-surface">
+            <ul className="divide-y divide-border">
+              {items.length === 0 ? (
+                <li className="p-4 text-sm text-muted">No resources match this filter.</li>
+              ) : (
+                items.map((r) => (
+                  <li key={r.id} className="flex items-start gap-2 p-3">
+                    <span
+                      className="mt-1.5 inline-block h-3 w-3 shrink-0 rounded-sm"
+                      style={{ background: resourceStatusColor(r) }}
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">{r.name}</p>
+                      <p className="text-xs text-muted">
+                        {r.type} · {statusLabel(r)}
+                      </p>
+                    </div>
+                    <LocationMapDialog
+                      latitude={r.location.latitude}
+                      longitude={r.location.longitude}
+                      label={r.name}
+                    />
+                    {isAdmin ? (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => void onDeactivate(r.id)}>
                         Deactivate
-                      </button>
-                    </td>
-                  ) : null}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                      </Button>
+                    ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </section>
       </div>
     </div>
   );

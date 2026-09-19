@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StatusPill } from "@/components/domain/StatusPill";
+import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
 import {
   ApiError,
   assignResource,
@@ -86,7 +87,16 @@ export default function IncidentDetailPage() {
         ← Dashboard
       </Link>
       <header className="stack" style={{ gap: "0.5rem" }}>
-        <h1>{incident.tracking_ref}</h1>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
+          <h1 style={{ margin: 0 }}>{incident.tracking_ref}</h1>
+          {incident.location ? (
+            <LocationMapDialog
+              latitude={incident.location.latitude}
+              longitude={incident.location.longitude}
+              label={incident.tracking_ref}
+            />
+          ) : null}
+        </div>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
           <StatusPill status={incident.status} />
           <span className={`prio prio-${incident.priority ?? "none"}`}>

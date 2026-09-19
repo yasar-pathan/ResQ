@@ -35,6 +35,7 @@ Every manual knob is listed once in the **Config table** below. Phase checklists
 | Delayed alert | `DELAYED_RESPONSE_THRESHOLD_MINUTES` | |
 | CORS | `FRONTEND_ORIGIN=http://localhost:3000` | |
 | Frontend hot-reload | `docker-compose.override.yml` | Bind-mount `./frontend` (dev only; CI uses image) |
+| Map tiles (Leaflet) | `NEXT_PUBLIC_MAP_TILE_URL` | OSM by default; needs network |
 | Dependency audits | CI `\|\| true` | Informational; do not block on transitive CVEs by default |
 
 ---
@@ -162,6 +163,21 @@ Checklist:
 - [ ] Dispatchers prefer desktop for map+queue; phone is backup only
 
 **Out of scope:** React Native, Flutter, Capacitor, Play Store, App Store.
+
+---
+
+## 8d. Phase 14 — Ops shell & Leaflet maps
+
+1. Ops header: collapse control, brand, **bell** (active alerts popover) → **View all** opens `/alerts`.
+2. Sidebar collapses to icon rail (desktop); hamburger Sheet on phone.
+3. Dashboard filters (category / priority / status) update **both** queue and map incidents.
+4. Queue rows: Map pin dialog + **Open** button (not plain text).
+5. Map uses OpenStreetMap tiles (`NEXT_PUBLIC_MAP_TILE_URL`) — requires outbound network to the tile host.
+6. Resources page: legend + status-colored markers (available / assigned / unavailable-inactive).
+
+| Knob | Default |
+|------|---------|
+| Map tiles | `NEXT_PUBLIC_MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png` |
 
 ---
 
