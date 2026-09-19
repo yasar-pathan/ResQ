@@ -124,3 +124,50 @@ Confirm tests pass with no real LLM key (NFR-004 fallback gate).
 ## 7. Next phase
 
 Phase 6: citizen `/report` and `/sos` UI against this API.
+
+---
+
+# Phase 6 manual checklist (citizen report and SOS)
+
+## 1. Rebuild stack
+
+```powershell
+docker compose build frontend api
+docker compose up -d
+```
+
+## 2. Citizen smoke
+
+1. Open http://localhost:3000 — brand + Report / SOS CTAs.
+2. `/report` — fill category, location (auto or manual), description → submit → tracking ref.
+3. `/sos` — tap SOS → confirm (≤2 taps) with location allowed.
+4. Deny location once → enter manual lat/lng → confirm still works.
+5. Open `/report/{tracking_ref}` — public status only; after worker runs, status may leave `reported`.
+
+## 3. Accessibility / responsive
+
+- Complete SOS with keyboard only (Tab / Enter / Space).
+- Resize viewport to ~320px — form and SOS remain usable.
+
+## 4. Optional API check
+
+```powershell
+curl -s -X POST http://localhost:8000/incidents/sos -H "Content-Type: application/json" -d "{\"location\":{\"latitude\":12.97,\"longitude\":77.59},\"idempotency_key\":\"sos-manual-00000001\",\"is_anonymous\":true}"
+```
+
+## 5. Tests
+
+```powershell
+docker compose run --rm api pytest
+docker compose run --rm frontend sh -c "npm ci && npm test"
+```
+
+If frontend tests miss packages after dependency changes: `docker volume rm rescuegrid_frontend_node_modules` then re-run.
+
+## 6. Gate sign-off
+
+Phase 6 DoD: SOS ≤2 taps; report + tracker work against live API. Full dispatcher E2E-02 (PII/queue) waits for Phase 7.
+
+## 7. Next
+
+Phase 7 — dispatch recommendation, assignment, live dashboard.

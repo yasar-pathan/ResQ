@@ -1,15 +1,26 @@
-import { getApiBaseUrl } from "@/lib/api/client";
+import Link from "next/link";
 
 export default function HomePage() {
-  const apiBase = getApiBaseUrl();
-
   return (
-    <main style={{ maxWidth: 640, margin: "4rem auto", padding: "0 1rem" }}>
-      <h1>RescueGrid</h1>
-      <p style={{ marginTop: "1rem", color: "#475569" }}>
-        Phase 0 — local stack via Docker Compose. API base:{" "}
-        <code>{apiBase}</code>
-      </p>
-    </main>
+    <section className="stack" style={{ gap: "2rem" }}>
+      <div className="stack">
+        <p className="muted" style={{ fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "0.8rem" }}>
+          Emergency coordination
+        </p>
+        <h1 className="hero-title">RescueGrid</h1>
+        <p className="muted">
+          Report an emergency or send an SOS. Your location helps responders reach you faster.
+        </p>
+      </div>
+      <div className="cta-row">
+        <Link href="/report" className="btn btn-primary" style={{ flex: 1 }}>
+          Report an incident
+        </Link>
+        <Link href="/sos" className="btn btn-sos" style={{ flex: 1 }}>
+          <span aria-hidden="true">●</span>
+          SOS
+        </Link>
+      </div>
+    </section>
   );
 }

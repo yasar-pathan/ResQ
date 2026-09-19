@@ -10,6 +10,7 @@ from app.models.enums import AssignmentStatus, MediaType, QueueStatus
 from app.models.incident import Incident
 from app.models.incident_idempotency import IncidentIdempotencyKey
 from app.models.incident_media import IncidentMedia
+from app.models.trusted_contact import TrustedContact
 from app.models.enums import IncidentCategory, IncidentPriority, IncidentStatus
 
 
@@ -57,6 +58,14 @@ class IncidentRepository:
         self.session.add(
             IncidentMedia(incident_id=incident_id, type=media_type, storage_url=url)
         )
+
+    async def add_trusted_contacts(
+        self, incident_id: uuid.UUID, contacts: list[tuple[str, str]]
+    ) -> None:
+        for name, contact in contacts:
+            self.session.add(
+                TrustedContact(incident_id=incident_id, name=name, contact=contact)
+            )
 
     async def list_incidents(
         self,

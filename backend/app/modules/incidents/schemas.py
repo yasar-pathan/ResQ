@@ -22,6 +22,23 @@ class IncidentCreateRequest(BaseModel):
     photo_url: str | None = Field(default=None, max_length=500)
 
 
+class TrustedContactInput(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    contact: str = Field(min_length=1, max_length=255)
+
+
+class SosCreateRequest(BaseModel):
+    location: LocationInput
+    idempotency_key: str = Field(min_length=8, max_length=128)
+    is_anonymous: bool = True
+    description: str = Field(
+        default="SOS emergency report",
+        min_length=1,
+        max_length=5000,
+    )
+    trusted_contacts: list[TrustedContactInput] = Field(default_factory=list, max_length=3)
+
+
 class IncidentStatusPatch(BaseModel):
     status: IncidentStatus
 

@@ -16,8 +16,9 @@ from app.modules.incidents.schemas import (
     IncidentCreateRequest,
     IncidentListParams,
     IncidentStatusPatch,
+    SosCreateRequest,
 )
-from app.modules.incidents.service import IncidentService
+from app.modules.incidents.service import IncidentService, serialize_incident
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -32,12 +33,26 @@ async def create_incident(
 ) -> JSONResponse:
     service = IncidentService(session)
     incident, reused = await service.create_incident(body, actor)
-    from app.modules.incidents.service import serialize_incident
-
-    code = status.HTTP_201_CREATED
     message = "Incident retrieved (idempotent)" if reused else "Incident created"
     return JSONResponse(
-        status_code=code,
+        status_code=status.HTTP_201_CREATED,
+        content=success_response(serialize_incident(incident), message=message),
+    )
+
+
+@router.post("/sos", status_code=status.HTTP_201_CREATED)
+@limiter.limit("60/minute")
+async def create_sos(
+    request: Request,
+    body: SosCreateRequest,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    actor: Annotated[User | None, Depends(get_optional_user)],
+) -> JSONResponse:
+    service = IncidentService(session)
+    incident, reused = await service.create_sos(body, actor)
+    message = "SOS retrieved (idempotent)" if reused else "SOS incident created"
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
         content=success_response(serialize_incident(incident), message=message),
     )
 

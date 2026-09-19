@@ -10,7 +10,11 @@ from app.models.incident import Incident
 from app.models.user import User, UserRole
 from app.modules.incidents.pii import resolve_pii_visibility
 from app.modules.incidents.repository import IncidentRepository
-from app.modules.incidents.schemas import IncidentCreateRequest, IncidentListParams
+from app.modules.incidents.schemas import (
+    IncidentCreateRequest,
+    IncidentListParams,
+    SosCreateRequest,
+)
 from app.modules.incidents.state_machine import validate_transition
 
 
@@ -83,6 +87,27 @@ class IncidentService:
         await self.session.commit()
         await self.session.refresh(incident)
         return incident, False
+
+    async def create_sos(
+        self, body: SosCreateRequest, actor: User | None
+    ) -> tuple[Incident, bool]:
+        create_body = IncidentCreateRequest(
+            category=IncidentCategory.personal_safety,
+            description=body.description,
+            location=body.location,
+            source=IncidentSource.sos,
+            idempotency_key=body.idempotency_key,
+            is_anonymous=body.is_anonymous,
+        )
+        incident, reused = await self.create_incident(create_body, actor)
+        if not reused and body.trusted_contacts:
+            await self.repo.add_trusted_contacts(
+                incident.id,
+                [(c.name, c.contact) for c in body.trusted_contacts],
+            )
+            await self.session.commit()
+            await self.session.refresh(incident)
+        return incident, reused
 
     async def get_public_status(self, tracking_ref: str) -> dict:
         incident = await self.repo.get_by_tracking_ref(tracking_ref)

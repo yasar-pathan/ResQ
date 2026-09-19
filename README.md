@@ -96,7 +96,22 @@ curl -s -X POST http://localhost:8000/incidents \
 
 Manual verification steps: see [MANUAL_TASKS.md](MANUAL_TASKS.md).
 
-**Note:** Dedicated SOS route (API-006) is Phase 6; use `POST /incidents` with `source` for the four intake channels in Phase 4.
+### Citizen UI and SOS (Phase 6)
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:3000 | Citizen home (Report / SOS) |
+| http://localhost:3000/report | Structured incident report |
+| http://localhost:3000/sos | SOS quick report (≤2 taps) |
+| http://localhost:3000/report/{tracking_ref} | Public status tracker |
+
+```bash
+curl -s -X POST http://localhost:8000/incidents/sos \
+  -H "Content-Type: application/json" \
+  -d '{"location":{"latitude":12.9716,"longitude":77.5946},"idempotency_key":"sos-demo-00000001","is_anonymous":true}'
+```
+
+`POST /incidents/sos` creates `source=sos`, `category=personal_safety`, `priority=critical`. Trusted-contact rows may be stored; notification delivery is Phase 8.
 
 ### AI triage worker (Phase 5)
 

@@ -53,8 +53,11 @@ jobs:
       - name: Backend smoke tests
         run: docker compose run --rm api pytest
 
+      - name: Frontend unit tests
+        run: docker compose run --rm frontend sh -c "npm ci && npm test"
+
       - name: Frontend production build
-        run: docker compose run --rm frontend npm run build
+        run: docker compose run --rm frontend sh -c "npm ci && npm run build"
 
       - name: Tear down
         if: always()
