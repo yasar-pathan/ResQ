@@ -1,0 +1,7 @@
+# Dev overrides (merged automatically by Docker Compose).
+# Keeps hot-reload volumes in override so docker-compose.yml stays CI-friendly.
+
+services:
+  frontend:
+    environment:
+      WATCHPACK_POLLING: "true"

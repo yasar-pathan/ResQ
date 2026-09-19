@@ -1,0 +1,39 @@
+# 07 — Implementation Roadmap: RescueGrid
+
+Each phase's Verification Gate must pass before the next phase starts. Phases map to Document 04 Section C's mandatory sequence.
+
+## Phase 0 — Repository & Environment
+**Objective:** Working local dev environment. **Modules:** repo scaffold (backend + frontend per Doc 03 §3 / Doc 02 §9), Docker Compose (Postgres+PostGIS, Redis), `.env.example`, CI skeleton (lint+test on push). **Dependencies:** none. **Output:** `docker compose up` yields a running Postgres+PostGIS+Redis stack; empty FastAPI app responds on `/health`; empty Next.js app builds. **Tests:** smoke test — health endpoint 200. **Gate:** local stack boots clean from a fresh clone. **DoD:** documented in README, one-command startup.
+
+## Phase 1 — Foundation
+**Objective:** Core infra pieces before any feature. **Modules:** SQLAlchemy base/session, Alembic init, standard response envelope + error handler middleware, structured logging with correlation ID, CORS/rate-limit middleware skeleton. **Dependencies:** Phase 0. **Output:** empty-but-correct request/response pipeline. **Tests:** UT for error envelope shape. **Gate:** a deliberately-thrown exception returns the standard error envelope, not a raw trace. **DoD:** middleware stack covers every route by default.
+
+## Phase 2 — Authentication (F-14, FR-015/024)
+**Objective:** Working auth + RBAC + audit-log scaffold. **Modules:** `users` model+migration, `auth` module (register/login/refresh/logout), JWT issuance, role-check dependency, `audit_log` model+migration. **Dependencies:** Phase 1. **Output:** API-001–004 functional. **Tests:** UT-12, SEC-01/02/03. **Gate:** all four roles can be created and authenticate; role-mismatch is rejected. **DoD:** audit_log records auth.login events.
+
+## Phase 3 — Core Data Layer
+**Objective:** All remaining entities in place. **Modules:** `incidents`, `incident_media`, `resources`, `assignments`, `alerts`, `notifications`, `trusted_contacts`, `classification_queue` models + migrations (Doc 03 §4). **Dependencies:** Phase 2. **Output:** full schema live in dev DB with all indexes/constraints (incl. the partial-unique-index on assignments and GIST indexes on location columns). **Tests:** migration-apply verification. **Gate:** `alembic upgrade head` clean; ER relationships confirmed via a seed-data script. **DoD:** schema matches Doc 03 §4 exactly.
+
+## Phase 4 — Core Backend: Intake & Resource Management (F-01, F-03, F-06)
+**Objective:** Incidents can be created and resources managed. **Modules:** `incidents` router (API-005, API-007, API-008, API-009, API-010), `resources` router (API-016–018), idempotency-key handling. **Dependencies:** Phase 3. **Output:** citizen/sensor/call/field_team intake functional; admin can manage resources. **Tests:** UT-01, UT-10, IT-01, IT-07, SEC-04/08/09. **Gate:** E2E intake-to-persisted-record verified for all four sources. **DoD:** PRD §5 F-01/F-03/F-06 acceptance criteria met.
+
+## Phase 5 — Core Backend: AI Triage Pipeline (F-04, F-05)
+**Objective:** Async classification + dedup working, including fallback and the personal-safety priority-forcing rule. **Modules:** `classifier_worker`, LLM client + prompt templates, fallback heuristic classifier, `dedup` service + spatial queries, priority-forcing rule (F-02/F-04 interaction). **Dependencies:** Phase 4. **Output:** every created incident reaches `classified` (or `possible_duplicate`/`merged`) status automatically. **Tests:** UT-04/04b/05/06, IT-04/05, PERF-04. **Gate:** classification succeeds with LLM mocked as failing (fallback engages) — this is a hard gate, not optional. **DoD:** NFR-004 verified with the real LLM key removed in a test run.
+
+## Phase 6 — Core Frontend: Citizen & SOS Flows (F-01, F-02)
+**Objective:** `/report` and `/sos` fully functional against the live backend. **Modules:** AppShell(citizen variant), report form, SOSButton + confirm flow, anonymous/trusted-contact toggles, tracking-status screen. **Dependencies:** Phase 4/5 (needs live API). **Output:** a citizen can submit a standard report and an SOS report end-to-end. **Tests:** UT/E2E-02, A11Y keyboard-only SOS completion, responsive at 320px. **Gate:** E2E-02 passes including the priority-forced/PII-restricted checks. **DoD:** SOS completes in ≤2 taps per PRD F-02 acceptance criteria.
+
+## Phase 7 — Major Workflows: Dispatch & Live Dashboard (F-07, F-08, F-09)
+**Objective:** Recommendation, assignment, and live dashboard fully wired. **Modules:** recommendation service (API-013), assignment flow (API-014/015), WS gateway + Redis Pub/Sub backplane, dashboard frontend (queue+map+drawer). **Dependencies:** Phase 5, 6. **Output:** a dispatcher can triage, confirm/override a recommendation, assign, and watch live status. **Tests:** UT-07/08, IT-06/08, PERF-02, E2E-01. **Gate:** concurrent-assignment race test (IT-06) passes — no double-assignment possible. **DoD:** two connected dashboard sessions converge within the 5s propagation target.
+
+## Phase 8 — Alerts, Notifications & Field Team (F-10, F-11, F-12)
+**Objective:** Escalation logic, notification delivery, field-team assignment view. **Modules:** `alert_rule_worker`, `alerts` router, `notifications` service (real email + simulated SMS/push), trusted-contact notify job, field-team frontend screens. **Dependencies:** Phase 7. **Output:** alerts fire correctly, notifications deliver/log correctly, field team can view and update assignments. **Tests:** UT-09/11/16, IT-09/11/12, E2E-04/05. **Gate:** no duplicate active alerts under repeated rule evaluation (IT-09). **DoD:** PRD F-10/F-12 acceptance criteria met.
+
+## Phase 9 — Analytics & Personal-Safety Hardening (F-13, F-14/PII)
+**Objective:** Analytics dashboard live; PII protection fully enforced and audited. **Modules:** `analytics` router+queries (API-021–024), `resolve_pii_visibility()` enforced across every read path, admin analytics/user-management frontend. **Dependencies:** Phase 8. **Output:** analytics reflects real system state; personal-safety data provably protected. **Tests:** IT-10/13, SEC-05/06/07, E2E-06. **Gate:** SEC-05 and SEC-06 pass against a live adversarial test, not just unit mocks. **DoD:** audit_log correctly records every PII access/denial.
+
+## Phase 10 — Scalability Hardening & Security Pass [E]
+**Objective:** Prove the horizontal-scale design actually works; close remaining security gaps. **Modules:** PgBouncer config, multi-replica local test harness, Redis-backed WS fan-out verification, rate-limiting tuning, dependency audit (`pip-audit`/`npm audit`), secure-headers middleware. **Dependencies:** Phase 9. **Output:** two locally-run API replicas correctly share dashboard state via Redis. **Tests:** IT-14, PERF-01/02/03, SEC-01–10 full pass. **Gate:** full security test suite green; two-replica WS test (IT-14) passes. **DoD:** Doc 03 §12 scalability path items 1–5 demonstrably working, not just documented.
+
+## Phase 11 — Testing, Deployment & Final Verification
+**Objective:** Production-ready deploy + full sign-off. **Modules:** CI pipeline finalized (lint, full test suite, migration check), Docker image build, Render/Railway/Vercel/Neon/Upstash deployment, `/health` checks wired to platform monitors. **Dependencies:** Phase 10. **Output:** live deployed system. **Tests:** full regression suite, deployment smoke tests (Doc 06, "Deployment Verification"), manual walk-through of journeys J1–J5 against the deployed environment. **Gate:** all items in Document 04 Section S ("Final Verification") checked. **DoD:** Final Implementation Report produced per Document 08's closing section, including environment variables required, migration instructions, and known limitations (password recovery, simulated SMS/push, no live location tracking).
