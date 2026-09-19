@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+
 type SOSButtonProps = {
   onActivate: () => void;
   disabled?: boolean;
@@ -10,12 +12,12 @@ export function SOSButton({ onActivate, disabled, label = "Send SOS" }: SOSButto
   return (
     <button
       type="button"
-      className="btn btn-sos"
+      className="btn btn-sos sos-pulse"
       disabled={disabled}
       onClick={onActivate}
       aria-label={label}
     >
-      <span aria-hidden="true">●</span>
+      <AlertTriangle size={28} aria-hidden />
       SOS
     </button>
   );

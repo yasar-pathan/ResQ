@@ -36,11 +36,18 @@ export default function TrackingPage() {
   }, [load]);
 
   return (
-    <section className="stack">
+    <section className="citizen-narrow stack animate-enter">
       <div className="stack">
         <h1 className="hero-title">Report status</h1>
         <p className="muted">Public tracking for reference {trackingRef || "—"}</p>
       </div>
+
+      {data?.status === "resolved" || data?.status === "closed" ? (
+        <div className="page-media-banner" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/media/resources-arrived-success.jpg" alt="" />
+        </div>
+      ) : null}
 
       <div className="panel stack">
         {loading && !data ? <p className="muted">Loading…</p> : null}

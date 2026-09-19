@@ -1,8 +1,8 @@
 # Final Implementation Report — RescueGrid (Phase 11)
 
-**Status:** Local production-ready Compose stack + CI + docs complete.  
+**Status:** Local production-ready Compose stack + CI + docs complete. Phases 12–13 add UI polish and mobile PWA access (non-native).  
 **Date:** 2026-09-19  
-**Scope:** Phases 1–11 implemented in-repo. Live cloud provisioning is documented, not executed (no platform credentials in this pass).
+**Scope:** Phases 1–13 in-repo. Live cloud provisioning is documented, not executed (no platform credentials in this pass).
 
 ---
 
@@ -14,7 +14,8 @@
 | Worker | Classification / alerts / notifications loop (`:8081` health) |
 | DB | PostGIS 16 (`postgres:5432`) |
 | Cache / pubsub | Redis 7 |
-| Frontend | Next.js 15 App Router (`:3000`) |
+| Frontend | Next.js 15 App Router (`:3000`), PWA manifest |
+| Brand | Cropped `assets/logo.png` → `public/brand/`; media in `public/media/` |
 | Auth | JWT access + refresh; `require_role` RBAC |
 | CI | GitHub Actions compose-smoke + ruff + eslint |
 
@@ -105,3 +106,16 @@ Full sequence: see `MANUAL_TASKS.md` § Phase 11 Final Verification and `08_IDE_
 | `/settings/*` | — | — | — | yes |
 
 API remains source of truth; UI gates are defense in depth.
+
+---
+
+## 8. Mobile access (Phase 13)
+
+**Recommendation:** do **not** build native Android/iOS apps for MVP. Citizens and field staff use the responsive web app on their phones; install via **Add to Home Screen** / Chrome Install (PWA).
+
+- Manifest: `/manifest.webmanifest`
+- Icons: `/brand/icon-192.png`, `/brand/icon-512.png`
+- Install hint on citizen home
+- Full checklist: `MANUAL_TASKS.md` § Phase 13
+
+Heavy dispatcher map/queue workflows remain desktop-preferred.

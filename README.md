@@ -151,6 +151,12 @@ Incident APIs return `ai_summary` / `classification_source`. Personal-safety rep
 - Secure headers middleware; public intake remains `60/minute`.
 - Pre-push lint: `bash scripts/lint-gate.sh` (ruff + eslint + pytest).
 
+### Branding & mobile (Phases 12–13)
+
+- Logo and photography live under `frontend/public/brand/` and `frontend/public/media/`.
+- Citizen home is a full-bleed hero; auth pages use a split visual layout.
+- **Phone access without an app store:** open the site in the mobile browser, or **Add to Home Screen** (PWA). See `MANUAL_TASKS.md` § Phase 13. No native Android/iOS builds.
+
 ### AI triage worker (Phase 5)
 
 The `worker` service polls `classification_queue`, classifies incidents (LLM when `LLM_API_KEY` is set, otherwise rule-based fallback), runs PostGIS dedup, and publishes updates to Redis channel `rescuegrid:incidents`.
@@ -169,7 +175,8 @@ After `POST /incidents`, expect `classification_queue.status=done` and `incident
 
 - LLM, email, and object storage keys are optional until later roadmap phases.
 - SMS/push notifications are simulated in product scope (not wired in Phase 0).
-- `08_IDE_IMPLEMENTATION_PROMPT.md` is not in this repo yet; use `07_IMPLEMENTATION_ROADMAP.md` Phase 0 gate for local verification.
+- `08_IDE_IMPLEMENTATION_PROMPT.md` holds the Final Verification checklist (Doc 04 §S).
+- Operator runbook: `MANUAL_TASKS.md`. Final report: `FINAL_IMPLEMENTATION_REPORT.md`.
 
 ## Project layout
 

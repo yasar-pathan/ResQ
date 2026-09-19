@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { AlertTriangle, FileText } from "lucide-react";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/layout/BrandMark";
 
 type AppShellProps = {
   children: ReactNode;
@@ -10,13 +12,14 @@ export function AppShell({ children }: AppShellProps) {
     <div className="citizen-shell">
       <header className="citizen-header">
         <div className="citizen-header-inner">
-          <Link href="/" className="brand">
-            RescueGrid
-          </Link>
+          <BrandMark href="/" size={40} />
           <nav className="citizen-nav" aria-label="Citizen">
-            <Link href="/report">Report</Link>
+            <Link href="/report" className="nav-link">
+              <FileText size={18} aria-hidden />
+              Report
+            </Link>
             <Link href="/sos" className="nav-sos">
-              <span aria-hidden="true">●</span>
+              <AlertTriangle size={18} aria-hidden />
               SOS
             </Link>
           </nav>

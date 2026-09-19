@@ -133,6 +133,38 @@ Manual: J1–J5 walkthrough; SEC-011/012 live attempt; remove `LLM_API_KEY` and 
 
 ---
 
+## 8b. Phase 12 — UI polish check
+
+1. Home (`/`) shows RescueGrid logo + full-bleed help-desk hero + Report/SOS CTAs.
+2. Login/register show ambulance visual + logo wordmark.
+3. Report page shows fire-brigade banner; resources page shows success/operations photo.
+4. Operator sidebar uses Lucide icons + white logo mark.
+5. SOS button pulses (respects `prefers-reduced-motion`).
+
+---
+
+## 8c. Phase 13 — Mobile access (PWA, no native apps)
+
+**Easy path:** use the **same website** on a phone browser. Optionally **Add to Home Screen** so RescueGrid opens like an app. No Android/iOS store build is required or shipped.
+
+| Step | Android (Chrome) | iOS (Safari) |
+|------|------------------|--------------|
+| Open | `https://<your-frontend>/` (or `http://localhost:3000` on LAN) | same |
+| Install | Menu → **Install app** / Install RescueGrid (when prompted) | **Share** → **Add to Home Screen** |
+| Use | Icon launches standalone shell; report + SOS work as on desktop mobile layout | same |
+
+Checklist:
+
+- [ ] Manifest loads: `/manifest.webmanifest`
+- [ ] Icons: `/brand/icon-192.png`, `/brand/icon-512.png`, `/brand/apple-touch-icon.png`
+- [ ] Complete `/report` and `/sos` on a phone-sized viewport (≤390px)
+- [ ] Field `/field/assignments` readable on phone (stacked layout)
+- [ ] Dispatchers prefer desktop for map+queue; phone is backup only
+
+**Out of scope:** React Native, Flutter, Capacitor, Play Store, App Store.
+
+---
+
 ## 9. Cloud deploy checklist (manual — no live deploy in Phase 11 pass)
 
 ### Mapping

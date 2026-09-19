@@ -72,6 +72,10 @@ export default function ResourcesPage() {
 
   return (
     <div className="stack" style={{ gap: "1.5rem" }}>
+      <div className="page-media-banner page-media-banner-wide" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/media/resources-arrived-success.jpg" alt="" />
+      </div>
       <header>
         <h1>Resources</h1>
         <p className="muted">Inventory of response units available for assignment</p>

@@ -77,7 +77,11 @@ export default function ReportPage() {
 
   if (trackingRef) {
     return (
-      <section className="stack">
+      <section className="citizen-narrow stack animate-enter">
+        <div className="page-media-banner" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/media/resources-arrived-success.jpg" alt="" />
+        </div>
         <div className="alert-success stack">
           <h1 className="hero-title" style={{ fontSize: "1.4rem" }}>
             Report submitted
@@ -97,7 +101,11 @@ export default function ReportPage() {
   }
 
   return (
-    <section className="stack">
+    <section className="citizen-narrow stack animate-enter">
+      <div className="page-media-banner" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/media/fire-brigade-ready.jpg" alt="" />
+      </div>
       <div className="stack">
         <h1 className="hero-title">Report an incident</h1>
         <p className="muted">Describe what is happening and where. Fields marked required help responders.</p>

@@ -102,10 +102,13 @@ export default function SosPage() {
 
   if (step === "success" && trackingRef) {
     return (
-      <section className="stack">
+      <section className="citizen-narrow stack animate-enter">
+        <div className="page-media-banner" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/media/resources-arrived-success.jpg" alt="" />
+        </div>
         <div className="alert-success stack">
           <h1 className="hero-title" style={{ fontSize: "1.5rem" }}>
-            <span aria-hidden="true">● </span>
             SOS sent
           </h1>
           <p>
@@ -125,14 +128,9 @@ export default function SosPage() {
 
   if (step === "idle") {
     return (
-      <section className="stack" style={{ gap: "1.5rem" }}>
+      <section className="citizen-narrow stack animate-enter" style={{ gap: "1.5rem" }}>
         <div className="stack">
-          <h1 className="hero-title">
-            <span style={{ color: "var(--color-sos)" }} aria-hidden="true">
-              ●{" "}
-            </span>
-            SOS
-          </h1>
+          <h1 className="hero-title">SOS</h1>
           <p className="muted">
             One more confirm step after this. Location is required so help can find you.
           </p>
@@ -143,7 +141,7 @@ export default function SosPage() {
   }
 
   return (
-    <section className="stack">
+    <section className="citizen-narrow stack animate-enter">
       <div className="stack">
         <h1 className="hero-title" style={{ fontSize: "1.4rem" }}>
           Confirm SOS

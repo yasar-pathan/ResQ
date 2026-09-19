@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandMark } from "@/components/layout/BrandMark";
 
 export default function Error({
   error,
@@ -11,27 +12,17 @@ export default function Error({
 }) {
   return (
     <div className="auth-page">
-      <div className="auth-panel" style={{ textAlign: "center" }}>
-        <p
-          className="muted"
-          style={{
-            fontWeight: 600,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-            fontSize: "0.8rem",
-          }}
-        >
-          Something went wrong
+      <div className="auth-panel animate-enter" style={{ textAlign: "center" }}>
+        <p className="home-eyebrow">Something went wrong</p>
+        <BrandMark href="/" size={48} />
+        <p className="muted" style={{ marginTop: "1rem" }}>
+          {error.message || "An unexpected error occurred."}
         </p>
-        <h1 className="hero-title" style={{ fontSize: "2rem" }}>
-          RescueGrid
-        </h1>
-        <p className="muted">{error.message || "An unexpected error occurred."}</p>
         <p style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", justifyContent: "center" }}>
           <button type="button" className="btn btn-primary" onClick={() => reset()}>
             Try again
           </button>
-          <Link className="btn btn-ghost" href="/">
+          <Link className="btn btn-secondary" href="/">
             Home
           </Link>
         </p>
