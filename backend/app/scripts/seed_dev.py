@@ -34,13 +34,6 @@ async def seed() -> None:
     settings = get_settings()
     factory = get_session_factory()
     async with factory() as session:
-        existing = await session.execute(
-            select(Incident).where(Incident.tracking_ref == SEED_MARKER_TRACKING)
-        )
-        if existing.scalar_one_or_none():
-            print("Seed data already present; skipping.")
-            return
-
         admin_email = settings.bootstrap_admin_email or "admin@rescuegrid.dev"
         admin = await session.execute(select(User).where(User.email == admin_email.lower()))
         admin_user = admin.scalar_one_or_none()
@@ -75,6 +68,14 @@ async def seed() -> None:
         field_op = await ensure_user(
             "field@rescuegrid.dev", "Seed Field", UserRole.field_team
         )
+        await session.commit()
+
+        existing = await session.execute(
+            select(Incident).where(Incident.tracking_ref == SEED_MARKER_TRACKING)
+        )
+        if existing.scalar_one_or_none():
+            print("Seed incidents already present; ops users ensured.")
+            return
 
         resources = [
             Resource(
