@@ -52,12 +52,17 @@ def compute_dedup_score(
     other_category: IncidentCategory,
     description: str,
     other_description: str,
+    embedding_similarity: float | None = None,
 ) -> float:
     if category != other_category:
         return 0.0
     dist = distance_score(distance_meters, radius_meters)
     time_part = time_proximity_score(created_at, other_created_at, window_minutes)
-    text_part = text_similarity(description, other_description)
+    seq = text_similarity(description, other_description)
+    if embedding_similarity is not None:
+        text_part = max(seq, embedding_similarity)
+    else:
+        text_part = seq
     return 0.45 * dist + 0.25 * time_part + 0.30 * text_part
 
 

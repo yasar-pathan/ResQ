@@ -31,7 +31,8 @@ Remaining operator knobs only. Completed phase walkthroughs live in history via 
 | Bootstrap admin | `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` | |
 | Seed dispatcher | `dispatcher@rescuegrid.dev` / `ChangeMeOps123!` | From `seed_dev` |
 | Seed field | `field@rescuegrid.dev` / `ChangeMeOps123!` | |
-| LLM | `LLM_API_KEY` (optional) | Empty → rule fallback |
+| LLM chat | `LLM_API_KEY`, `LLM_API_BASE_URL`, `LLM_MODEL` | OpenAI-compatible `/chat/completions`; empty → fallback |
+| LLM embeddings | `LLM_EMBEDDING_MODEL` | Optional dedup boost via `/embeddings`; empty → SequenceMatcher only |
 | Email | `EMAIL_*` (optional) | Unused if empty |
 | Dedup | `DEDUP_RADIUS_METERS`, `DEDUP_TIME_WINDOW_MINUTES` | |
 | Delayed alert | `DELAYED_RESPONSE_THRESHOLD_MINUTES` | |
@@ -46,7 +47,7 @@ Remaining operator knobs only. Completed phase walkthroughs live in history via 
 ## 3. One-time env secrets
 
 1. Set strong `JWT_SECRET` and `BOOTSTRAP_ADMIN_PASSWORD`.
-2. Optionally set `LLM_*` / `EMAIL_*`.
+2. Optionally set OpenAI-compatible `LLM_*` and `LLM_EMBEDDING_MODEL`; restart `worker` after changes.
 3. Never commit `.env`.
 
 ---
@@ -103,7 +104,7 @@ After any Docker rebuild or frontend cache wipe:
 
 1. `curl.exe -sf http://localhost:8000/health` and `http://localhost:8081/health`
 2. Open `http://localhost:3000/login` — page must be **styled** (not unstyled HTML)
-3. Optional: login as dispatcher → `/dashboard` map tiles; citizen `/report` + `/sos`
+3. Optional: login as dispatcher → `/incidents/log` (call intake); `docker compose run --rm api python -m app.scripts.simulate_sensor_intake` for sensor source
 
 Historical Phase 11 sign-off checklist (if needed): `08_IDE_IMPLEMENTATION_PROMPT.md`.
 

@@ -12,6 +12,7 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Phone,
   Users,
   X,
 } from "lucide-react";
@@ -188,6 +189,7 @@ export function OperatorShell({ children }: { children: ReactNode }) {
     ? [{ href: "/field/assignments", label: "Assignments", icon: ClipboardList }]
     : [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/incidents/log", label: "Log call", icon: Phone },
         { href: "/alerts", label: "Alerts", icon: AlertTriangle },
         { href: "/resources", label: "Resources", icon: Package },
         { href: "/analytics", label: "Analytics", icon: BarChart3 },

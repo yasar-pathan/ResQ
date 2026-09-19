@@ -45,3 +45,32 @@ def test_ut06_different_category_scores_zero() -> None:
 
 def test_ut06_borderline_possible_duplicate() -> None:
     assert classify_match_score(BORDERLINE_THRESHOLD) == "possible_duplicate"
+
+
+def test_ut06_embedding_leg_can_raise_text_score() -> None:
+    now = datetime.now(UTC)
+    base = compute_dedup_score(
+        distance_meters=10.0,
+        radius_meters=150.0,
+        created_at=now,
+        other_created_at=now - timedelta(minutes=2),
+        window_minutes=30,
+        category=IncidentCategory.fire,
+        other_category=IncidentCategory.fire,
+        description="warehouse smoke",
+        other_description="totally different words",
+        embedding_similarity=None,
+    )
+    boosted = compute_dedup_score(
+        distance_meters=10.0,
+        radius_meters=150.0,
+        created_at=now,
+        other_created_at=now - timedelta(minutes=2),
+        window_minutes=30,
+        category=IncidentCategory.fire,
+        other_category=IncidentCategory.fire,
+        description="warehouse smoke",
+        other_description="totally different words",
+        embedding_similarity=0.95,
+    )
+    assert boosted > base

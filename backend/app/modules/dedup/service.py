@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings
 from app.models.enums import IncidentCategory, IncidentStatus
 from app.models.incident import Incident
+from app.modules.dedup.embedding_client import EmbeddingClient, cosine_similarity
 from app.modules.dedup.scoring import classify_match_score, compute_dedup_score
 from app.modules.dedup.spatial_queries import find_nearby_candidates
 
@@ -16,6 +17,7 @@ class DedupService:
     def __init__(self, session: AsyncSession, settings: Settings) -> None:
         self.session = session
         self.settings = settings
+        self.embeddings = EmbeddingClient(settings)
 
     async def evaluate_after_classification(self, incident: Incident) -> None:
         if incident.status not in (IncidentStatus.classified,):
@@ -40,6 +42,15 @@ class DedupService:
             parent_id = row["id"]
             pid = parent_id if isinstance(parent_id, uuid.UUID) else uuid.UUID(str(parent_id))
             other_cat = IncidentCategory(row["category"])
+            embed_sim: float | None = None
+            if self.embeddings.is_configured():
+                try:
+                    vectors = await self.embeddings.embed_texts(
+                        [incident.description, row["description"]]
+                    )
+                    embed_sim = cosine_similarity(vectors[0], vectors[1])
+                except Exception:
+                    logger.exception("Embedding similarity skipped for incident %s", incident.id)
             score = compute_dedup_score(
                 distance_meters=float(row["distance_m"]),
                 radius_meters=radius,
@@ -50,6 +61,7 @@ class DedupService:
                 other_category=other_cat,
                 description=incident.description,
                 other_description=row["description"],
+                embedding_similarity=embed_sim,
             )
             match = classify_match_score(score)
             if match == "none":

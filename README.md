@@ -167,7 +167,7 @@ docker compose up -d
 docker compose logs -f worker
 ```
 
-Optional LLM (OpenAI-compatible): set `LLM_API_KEY`, `LLM_API_BASE_URL`, and `LLM_MODEL` in `.env`. Tuning: `CLASSIFIER_POLL_SECONDS`, `CLASSIFIER_MAX_ATTEMPTS`, `DEDUP_RADIUS_METERS`, `DEDUP_TIME_WINDOW_MINUTES`.
+Optional LLM (OpenAI-compatible): set `LLM_API_KEY`, `LLM_API_BASE_URL`, and `LLM_MODEL` in `.env`. Optional dedup embeddings: `LLM_EMBEDDING_MODEL`. Tuning: `CLASSIFIER_POLL_SECONDS`, `CLASSIFIER_MAX_ATTEMPTS`, `DEDUP_RADIUS_METERS`, `DEDUP_TIME_WINDOW_MINUTES`.
 
 After `POST /incidents`, expect `classification_queue.status=done` and `incidents.status=classified` (or `merged` / `possible_duplicate` when dedup matches).
 

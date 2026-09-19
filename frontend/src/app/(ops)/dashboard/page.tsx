@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StatusPill } from "@/components/domain/StatusPill";
+import { ClassificationReviewBadge } from "@/components/domain/ClassificationReviewBadge";
 import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
 import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
 import {
@@ -230,6 +231,7 @@ function DashboardInner() {
                       {inc.priority ?? "unclassified"}
                     </span>
                     <StatusPill status={inc.status} />
+                    <ClassificationReviewBadge confidence={inc.ai_confidence} />
                   </div>
                   <strong className="block text-sm">{inc.tracking_ref}</strong>
                   <span className="text-sm text-muted">{inc.category.replaceAll("_", " ")}</span>
@@ -294,6 +296,7 @@ function DashboardInner() {
                   <p className="text-sm text-muted">
                     {selected.category.replaceAll("_", " ")} · {selected.priority ?? "—"}
                   </p>
+                  <ClassificationReviewBadge confidence={selected.ai_confidence} />
                   <p className="mt-1 line-clamp-2 text-sm">
                     {selected.ai_summary || selected.description?.slice(0, 160)}
                   </p>

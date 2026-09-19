@@ -22,13 +22,19 @@ class LLMClient:
         self._timeout = httpx.Timeout(30.0, connect=10.0)
 
     def is_configured(self) -> bool:
-        return bool(self.settings.llm_api_key and self.settings.llm_api_base_url)
+        return bool(
+            self.settings.llm_api_key
+            and self.settings.llm_api_base_url
+            and self.settings.llm_model
+        )
 
     async def classify(self, incident: Incident) -> ClassificationResult:
         if not self.is_configured():
             raise LLMClientError("LLM not configured")
         base = (self.settings.llm_api_base_url or "").rstrip("/")
-        model = self.settings.llm_model or "gpt-4o-mini"
+        model = self.settings.llm_model
+        if not model:
+            raise LLMClientError("LLM_MODEL not set")
         url = f"{base}/chat/completions"
         messages = build_classification_messages(incident)
         payload: dict[str, Any] = {

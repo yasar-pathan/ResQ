@@ -40,6 +40,7 @@ def serialize_incident(incident: Incident, viewer: User | None = None, pii: dict
         "status": incident.status.value,
         "is_anonymous": incident.is_anonymous,
         "ai_summary": incident.ai_summary,
+        "ai_confidence": float(incident.ai_confidence) if incident.ai_confidence is not None else None,
         "classification_source": (
             incident.classification_source.value if incident.classification_source else None
         ),

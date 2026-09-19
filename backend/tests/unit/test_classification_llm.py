@@ -69,6 +69,15 @@ async def test_ut04b_fallback_when_llm_not_configured() -> None:
     assert result.confidence == Decimal("0.45")
 
 
+def test_ut04_llm_client_requires_model_when_configured() -> None:
+    settings = MagicMock()
+    settings.llm_api_key = "k"
+    settings.llm_api_base_url = "https://api.example.com/v1"
+    settings.llm_model = None
+    client = LLMClient(settings)
+    assert client.is_configured() is False
+
+
 @pytest.mark.asyncio
 async def test_ut04_llm_client_parses_response() -> None:
     settings = MagicMock()

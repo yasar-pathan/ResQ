@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StatusPill } from "@/components/domain/StatusPill";
+import { ClassificationReviewBadge } from "@/components/domain/ClassificationReviewBadge";
 import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
 import {
   ApiError,
@@ -97,11 +98,12 @@ export default function IncidentDetailPage() {
             />
           ) : null}
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
           <StatusPill status={incident.status} />
           <span className={`prio prio-${incident.priority ?? "none"}`}>
             {incident.priority ?? "unclassified"}
           </span>
+          <ClassificationReviewBadge confidence={incident.ai_confidence} />
         </div>
         <p className="muted">
           {incident.category.replaceAll("_", " ")} · {incident.source}

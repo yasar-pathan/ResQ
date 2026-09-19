@@ -1,8 +1,8 @@
 # Final Implementation Report — RescueGrid
 
-**Status:** Local production-ready Compose stack + CI + flat `docs/` complete through Phase 15+ UX (ops analytics/shell, citizen/auth polish, India demo seed).  
+**Status:** Local production-ready Compose stack + CI + flat `docs/` through Phase 15+ UX; **system audit** in `05_TRACEABILITY_MATRIX.md` Part 2 (2026-09-19).  
 **Date:** 2026-09-19  
-**Scope:** Phases 1–15+ in-repo. Live cloud provisioning is documented in `MANUAL_TASKS.md`, not executed (no platform credentials in this pass).
+**Scope:** Phases 1–15+ in-repo. **Live cloud provisioning is Deferred** (see `MANUAL_TASKS.md` §8 when ready).
 
 ---
 
@@ -42,7 +42,18 @@ Copy `.env.example` → `.env`. Required for local:
 | `NEXT_PUBLIC_MAP_TILE_URL` | OSM tiles for Leaflet (needs outbound network) |
 | `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` | First admin + seed |
 
-Optional: `LLM_*`, `EMAIL_*`, `OBJECT_STORAGE_*`, dedup/threshold/classifier tuning keys (see `.env.example`).
+Optional OpenAI-compatible AI (same base URL + Bearer key):
+
+| Variable | Purpose |
+|----------|---------|
+| `LLM_API_KEY` | Bearer token |
+| `LLM_API_BASE_URL` | e.g. `https://api.openai.com/v1` |
+| `LLM_MODEL` | Chat model for `/chat/completions` classification |
+| `LLM_EMBEDDING_MODEL` | Optional; e.g. `text-embedding-3-small` for dedup `/embeddings`. Empty → SequenceMatcher only |
+
+Other optional: `EMAIL_*`, `OBJECT_STORAGE_*`, dedup/threshold/classifier tuning (see `.env.example`).
+
+After changing LLM vars, rebuild/restart **worker** (and `api` if testing intake): `docker compose up -d --build worker api`.
 
 ---
 
@@ -100,7 +111,11 @@ docker compose run --rm api alembic current
 | Analytics | Recharts pie/bar charts with token-safe load; `HotspotsMap` + `invalidateSize` after layout |
 | Alerts | Map pin always shown when location exists; disabled state when missing |
 | Seed | `SEED00000002` India demo: same-city assignments + linked alerts |
-| Docker/frontend | Named volume `frontend_next` → `/app/.next`; `frontend/Dockerfile` clears `.next` on start; wipe volume if CSS/JS 404 |
+| Docker/frontend | Named volume `frontend_next` → `/app/.next`; Dockerfile clears `.next` on start; wipe volume if CSS/JS 404 |
+| Audit / traceability | `docs/05_TRACEABILITY_MATRIX.md` Part 2 — F-01–F-14 matrix, 80 pytest in CI |
+| F-03 log-call | Ops `/incidents/log` (authenticated `source=call`); sensor demo `python -m app.scripts.simulate_sensor_intake` |
+| F-04 review | `ai_confidence` in API; ops “Review classification” badge when &lt; 0.5 |
+| OpenAI dedup | Optional embedding similarity blended into dedup score (`max(SequenceMatcher, cosine)`) |
 
 ### Docker / frontend config notes
 
@@ -117,7 +132,7 @@ docker compose run --rm api alembic current
 | SMS / push | Simulated (`SMS_SIMULATED` logs); no carrier integration |
 | Live GPS tracking | Not implemented; intake uses one-shot lat/lng |
 | Media upload | Local `POST /media/upload` (JPEG/PNG/WebP ≤2MB) under `backend/uploads/`. Not cloud object storage. |
-| Cloud deploy | Documented in `MANUAL_TASKS.md`; not run without operator credentials |
+| Cloud deploy | **Deferred** — operator checklist in `MANUAL_TASKS.md` §8 |
 | PgBouncer | Optional profile; default stack uses direct Postgres |
 
 ---
@@ -129,7 +144,7 @@ bash scripts/lint-gate.sh
 # ruff + frontend lint/test + pytest
 ```
 
-Operator runbook (remaining knobs only): `MANUAL_TASKS.md`. Historical Phase 11 checklist: `08_IDE_IMPLEMENTATION_PROMPT.md`. Agent workflow: `04_DESIGN_AND_DEVELOPMENT_RULES.md` §T.
+Operator runbook (remaining knobs only): `MANUAL_TASKS.md`. Historical Phase 11 checklist: `08_IDE_IMPLEMENTATION_PROMPT.md`. Agent workflow: `04_DESIGN_AND_DEVELOPMENT_RULES.md` §T. **Audit matrix:** `05_TRACEABILITY_MATRIX.md` Part 2.
 
 ---
 

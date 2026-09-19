@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     llm_api_key: str | None = Field(default=None, alias="LLM_API_KEY")
     llm_api_base_url: str | None = Field(default=None, alias="LLM_API_BASE_URL")
     llm_model: str | None = Field(default=None, alias="LLM_MODEL")
+    llm_embedding_model: str | None = Field(default=None, alias="LLM_EMBEDDING_MODEL")
     email_api_key: str | None = Field(default=None, alias="EMAIL_API_KEY")
     email_from_address: str | None = Field(default=None, alias="EMAIL_FROM_ADDRESS")
     object_storage_bucket: str | None = Field(default=None, alias="OBJECT_STORAGE_BUCKET")

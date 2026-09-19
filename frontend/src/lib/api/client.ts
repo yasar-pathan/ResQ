@@ -114,6 +114,33 @@ export async function createIncident(input: {
   return parseEnvelope<IncidentCreated>(res);
 }
 
+export async function createOpsIncident(
+  token: string,
+  input: {
+    category: string;
+    description: string;
+    location: LocationPayload;
+    source: "call" | "field_team" | "sensor";
+    address_text?: string;
+    idempotency_key?: string;
+  },
+): Promise<IncidentCreated> {
+  const res = await fetch(`${getApiBaseUrl()}/incidents`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      category: input.category,
+      description: input.description,
+      location: input.location,
+      address_text: input.address_text || null,
+      source: input.source,
+      is_anonymous: false,
+      idempotency_key: input.idempotency_key ?? newIdempotencyKey("ops"),
+    }),
+  });
+  return parseEnvelope<IncidentCreated>(res);
+}
+
 export async function uploadMedia(file: File): Promise<{ url: string }> {
   const body = new FormData();
   body.append("file", file);
@@ -223,6 +250,8 @@ export async function getMe(token: string): Promise<UserPublic> {
 
 export type IncidentListItem = IncidentCreated & {
   ai_summary?: string | null;
+  ai_confidence?: number | null;
+  severity?: number | null;
   classification_source?: string | null;
   classified_at?: string | null;
   tracking_ref: string;
