@@ -23,6 +23,8 @@ export default function HomePage() {
       </div>
       <p className="muted" style={{ marginTop: "0.5rem" }}>
         Dispatcher or field team? <Link href="/login">Operator sign-in</Link>
+        {" · "}
+        <Link href="/register">Create citizen account</Link>
       </p>
     </section>
   );

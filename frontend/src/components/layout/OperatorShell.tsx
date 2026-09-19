@@ -36,6 +36,7 @@ export function OperatorShell({ children }: { children: ReactNode }) {
     : [
         { href: "/dashboard", label: "Dashboard" },
         { href: "/alerts", label: "Alerts" },
+        { href: "/resources", label: "Resources" },
         { href: "/analytics", label: "Analytics" },
         ...(isAdmin ? [{ href: "/settings/users", label: "Users" }] : []),
       ];

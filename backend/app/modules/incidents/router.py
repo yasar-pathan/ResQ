@@ -6,7 +6,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from app.core.exceptions import ValidationAppError
 from app.core.responses import success_response
+from app.core.validators import validate_tracking_ref
 from app.db.session import get_db
 from app.middleware.rate_limit import limiter
 from app.models.enums import IncidentCategory, IncidentStatus
@@ -84,8 +86,12 @@ async def tracking_status(
     tracking_ref: str,
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> JSONResponse:
+    try:
+        ref = validate_tracking_ref(tracking_ref)
+    except ValueError as exc:
+        raise ValidationAppError(str(exc)) from exc
     service = IncidentService(session)
-    data = await service.get_public_status(tracking_ref)
+    data = await service.get_public_status(ref)
     return JSONResponse(content=success_response(data))
 
 

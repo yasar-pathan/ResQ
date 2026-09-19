@@ -118,7 +118,7 @@ def test_sec06_pii_audit_rows(api_client: TestClient) -> None:
         "/incidents/sos",
         json={
             "location": {"latitude": 12.971, "longitude": 77.591},
-            "description": "SEC06",
+            "description": "SEC06 personal safety audit",
             "idempotency_key": f"sec06-{uuid.uuid4().hex}",
         },
         headers={"Authorization": f"Bearer {admin}"},
@@ -202,7 +202,7 @@ def test_it13_assigned_dispatcher_sees_identity(api_client: TestClient) -> None:
         "/incidents/sos",
         json={
             "location": {"latitude": 12.9705, "longitude": 77.5905},
-            "description": "IT13",
+            "description": "IT13 assigned identity check",
             "is_anonymous": False,
             "idempotency_key": f"it13-{uuid.uuid4().hex}",
         },

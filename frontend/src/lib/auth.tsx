@@ -14,6 +14,8 @@ import { ApiError, getMe, login as apiLogin, type UserPublic } from "@/lib/api/c
 
 const ACCESS_KEY = "rg_access_token";
 const REFRESH_KEY = "rg_refresh_token";
+const AUTH_COOKIE = "rg_auth";
+const ROLE_COOKIE = "rg_role";
 
 type AuthContextValue = {
   user: UserPublic | null;
@@ -25,6 +27,17 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function setSessionCookies(role: string) {
+  const maxAge = 60 * 60 * 12;
+  document.cookie = `${AUTH_COOKIE}=1; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  document.cookie = `${ROLE_COOKIE}=${encodeURIComponent(role)}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+}
+
+function clearSessionCookies() {
+  document.cookie = `${AUTH_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  document.cookie = `${ROLE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
 
 export function getStoredAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -49,15 +62,20 @@ export function AuthProvider({
   useEffect(() => {
     const token = getStoredAccessToken();
     if (!token) {
+      clearSessionCookies();
       setLoading(false);
       return;
     }
     setAccessToken(token);
     getMe(token)
-      .then(setUser)
+      .then((me) => {
+        setUser(me);
+        setSessionCookies(me.role);
+      })
       .catch(() => {
         localStorage.removeItem(ACCESS_KEY);
         localStorage.removeItem(REFRESH_KEY);
+        clearSessionCookies();
         setAccessToken(null);
       })
       .finally(() => setLoading(false));
@@ -81,6 +99,7 @@ export function AuthProvider({
     localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
     setAccessToken(tokens.access_token);
     const me = await getMe(tokens.access_token);
+    setSessionCookies(me.role);
     setUser(me);
     return me;
   }, []);
@@ -88,6 +107,7 @@ export function AuthProvider({
   const logout = useCallback(() => {
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    clearSessionCookies();
     setAccessToken(null);
     setUser(null);
     router.push("/login");

@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.core.validators import validate_password, validate_phone_optional
 from app.models.user import UserRole
 
 
@@ -9,6 +10,16 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     role: UserRole = UserRole.citizen
     phone: str | None = Field(default=None, max_length=20)
+
+    @field_validator("password")
+    @classmethod
+    def _password(cls, v: str) -> str:
+        return validate_password(v)
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v: str | None) -> str | None:
+        return validate_phone_optional(v)
 
 
 class LoginRequest(BaseModel):

@@ -8,7 +8,7 @@ def test_ut01_incident_create_requires_valid_location() -> None:
     with pytest.raises(ValidationError):
         IncidentCreateRequest(
             category="fire",
-            description="test",
+            description="valid description text",
             location=LocationInput(latitude=100, longitude=0),
             idempotency_key="key-12345678",
         )

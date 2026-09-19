@@ -173,6 +173,26 @@ export async function login(email: string, password: string): Promise<TokenPair>
   return parseEnvelope<TokenPair>(res);
 }
 
+export async function registerCitizen(input: {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}): Promise<UserPublic> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      name: input.name,
+      email: input.email,
+      password: input.password,
+      phone: input.phone,
+      role: "citizen",
+    }),
+  });
+  return parseEnvelope<UserPublic>(res);
+}
+
 export async function getMe(token: string): Promise<UserPublic> {
   const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
     headers: authHeaders(token),
@@ -259,18 +279,50 @@ export type ResourceItem = {
   name: string;
   status: string;
   location: { latitude: number; longitude: number };
+  is_active?: boolean;
 };
 
 export async function listResources(
   token: string,
-  params?: { status?: string },
+  params?: { status?: string; active_only?: boolean },
 ): Promise<{ items: ResourceItem[] }> {
   const qs = new URLSearchParams();
   if (params?.status) qs.set("status", params.status);
+  if (params?.active_only !== undefined) qs.set("active_only", String(params.active_only));
   qs.set("limit", "100");
   const res = await fetch(`${getApiBaseUrl()}/resources?${qs}`, {
     headers: authHeaders(token),
     cache: "no-store",
+  });
+  return parseEnvelope(res);
+}
+
+export async function createResource(
+  token: string,
+  body: {
+    type: string;
+    name: string;
+    location: { latitude: number; longitude: number };
+    capabilities?: Record<string, unknown>;
+  },
+): Promise<ResourceItem> {
+  const res = await fetch(`${getApiBaseUrl()}/resources`, {
+    method: "POST",
+    headers: { ...authHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return parseEnvelope(res);
+}
+
+export async function updateResource(
+  token: string,
+  id: string,
+  body: { is_active?: boolean; status?: string; name?: string },
+): Promise<ResourceItem> {
+  const res = await fetch(`${getApiBaseUrl()}/resources/${id}`, {
+    method: "PATCH",
+    headers: { ...authHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
   return parseEnvelope(res);
 }

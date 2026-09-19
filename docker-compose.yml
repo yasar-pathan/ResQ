@@ -36,8 +36,10 @@ services:
     ports:
       - "6379:6379"
 
+  # Optional connection pooler: docker compose --profile pooler up -d
   pgbouncer:
     image: edoburu/pgbouncer:latest
+    profiles: ["pooler"]
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-rescuegrid}:${POSTGRES_PASSWORD:-rescuegrid}@postgres:5432/${POSTGRES_DB:-rescuegrid}
       AUTH_TYPE: plain
@@ -84,8 +86,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      pgbouncer:
-        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     networks:
@@ -99,7 +99,7 @@ services:
       retries: 5
       start_period: 15s
 
-  # Second API replica for horizontal-scale / IT-14 local verification
+  # Second API replica: docker compose --profile replicas up -d
   api2:
     build:
       context: ./backend
@@ -112,8 +112,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      pgbouncer:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -139,8 +137,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      pgbouncer:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -168,9 +164,6 @@ services:
       - rescuegrid
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
 
 networks:
   rescuegrid:

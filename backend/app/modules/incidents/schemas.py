@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from app.core.validators import validate_contact
 from app.models.enums import IncidentCategory, IncidentSource, IncidentStatus
 
 
@@ -12,7 +13,7 @@ class LocationInput(BaseModel):
 
 class IncidentCreateRequest(BaseModel):
     category: IncidentCategory
-    description: str = Field(min_length=1, max_length=5000)
+    description: str = Field(min_length=10, max_length=2000)
     location: LocationInput
     address_text: str | None = Field(default=None, max_length=500)
     source: IncidentSource = IncidentSource.citizen_web
@@ -25,6 +26,11 @@ class TrustedContactInput(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     contact: str = Field(min_length=1, max_length=255)
 
+    @field_validator("contact")
+    @classmethod
+    def _contact(cls, v: str) -> str:
+        return validate_contact(v)
+
 
 class SosCreateRequest(BaseModel):
     location: LocationInput
@@ -32,8 +38,8 @@ class SosCreateRequest(BaseModel):
     is_anonymous: bool = True
     description: str = Field(
         default="SOS emergency report",
-        min_length=1,
-        max_length=5000,
+        min_length=10,
+        max_length=2000,
     )
     trusted_contacts: list[TrustedContactInput] = Field(default_factory=list, max_length=3)
 

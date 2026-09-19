@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-push lint gate (Phases 7–10 standing rule).
+# Pre-push lint gate (Phases 7–11 standing rule).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

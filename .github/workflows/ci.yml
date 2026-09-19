@@ -17,7 +17,7 @@ jobs:
       - name: Build images
         run: docker compose build
 
-      - name: Start stack
+      - name: Start stack (default profile only — no pooler/replicas)
         run: docker compose up -d
 
       - name: Wait for API health
@@ -47,6 +47,16 @@ jobs:
       - name: Apply database migrations
         run: docker compose run --rm migrate
 
+      - name: Migration head check (single head + current)
+        run: |
+          HEADS=$(docker compose run --rm api alembic heads | wc -l)
+          if [ "$HEADS" -ne 1 ]; then
+            echo "Expected exactly 1 alembic head, got $HEADS"
+            docker compose run --rm api alembic heads
+            exit 1
+          fi
+          docker compose run --rm api alembic current
+
       - name: Seed dev data smoke
         run: docker compose run --rm api python -m app.scripts.seed_dev
 
@@ -62,7 +72,7 @@ jobs:
       - name: Frontend production build
         run: docker compose run --rm frontend sh -c "npm ci && npm run build"
 
-      - name: Dependency audits
+      - name: Dependency audits (informational — non-blocking)
         run: |
           docker compose run --rm api sh -c "pip install --quiet pip-audit==2.7.3 && pip-audit -r requirements.txt || true"
           docker compose run --rm frontend sh -c "npm ci && npm audit --audit-level=high || true"
