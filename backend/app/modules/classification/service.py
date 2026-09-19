@@ -1,8 +1,6 @@
 import logging
 import uuid
-from decimal import Decimal
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings, get_settings

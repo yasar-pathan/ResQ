@@ -26,6 +26,7 @@ COPY alembic ./alembic
 COPY app ./app
 COPY tests ./tests
 COPY pytest.ini .
+COPY pyproject.toml .
 COPY docker ./docker
 
 RUN chmod +x /app/docker/worker-entrypoint.sh \

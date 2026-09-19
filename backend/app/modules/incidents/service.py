@@ -39,6 +39,13 @@ def serialize_incident(incident: Incident, viewer: User | None = None, pii: dict
         "priority": incident.priority.value if incident.priority else None,
         "status": incident.status.value,
         "is_anonymous": incident.is_anonymous,
+        "ai_summary": incident.ai_summary,
+        "classification_source": (
+            incident.classification_source.value if incident.classification_source else None
+        ),
+        "classified_at": (
+            incident.updated_at.isoformat() if incident.classification_source else None
+        ),
         "created_at": incident.created_at.isoformat(),
         "updated_at": incident.updated_at.isoformat(),
     }
@@ -129,7 +136,7 @@ class IncidentService:
             "updated_at": incident.updated_at.isoformat(),
         }
 
-    async def list_incidents(self, params: IncidentListParams) -> dict:
+    async def list_incidents(self, params: IncidentListParams, viewer: User | None = None) -> dict:
         from app.models.enums import IncidentPriority
 
         priority = IncidentPriority(params.priority) if params.priority else None
@@ -140,8 +147,13 @@ class IncidentService:
             page=params.page,
             limit=params.limit,
         )
+        items = []
+        for i in rows:
+            pii = await resolve_pii_visibility(self.session, i, viewer)
+            items.append(serialize_incident(i, viewer, pii=pii))
+        await self.session.commit()
         return {
-            "items": [serialize_incident(i) for i in rows],
+            "items": items,
             "total": total,
             "page": params.page,
             "limit": params.limit,
@@ -157,11 +169,8 @@ class IncidentService:
             if not has_assignment:
                 raise AuthorizationError("Access restricted for your role")
 
-        pii = resolve_pii_visibility(
-            incident,
-            viewer,
-            is_assigned_field_team=viewer.role == UserRole.field_team,
-        )
+        pii = await resolve_pii_visibility(self.session, incident, viewer)
+        await self.session.commit()
         return serialize_incident(incident, viewer, pii=pii)
 
     async def update_status(

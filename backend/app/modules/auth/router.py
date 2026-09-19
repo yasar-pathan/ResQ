@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.responses import success_response
@@ -9,7 +10,13 @@ from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.modules.auth.dependencies import get_current_user, get_optional_user, require_role
 from app.modules.auth.schemas import LoginRequest, RefreshRequest, RegisterRequest
-from app.modules.auth.service import login_user, logout_user, refresh_tokens, register_user, user_to_public
+from app.modules.auth.service import (
+    login_user,
+    logout_user,
+    refresh_tokens,
+    register_user,
+    user_to_public,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -57,6 +64,16 @@ async def logout(
 @router.get("/me")
 async def me(user: Annotated[User, Depends(get_current_user)]) -> JSONResponse:
     return JSONResponse(content=success_response(user_to_public(user)))
+
+
+@router.get("/users")
+async def list_users(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_role(UserRole.admin))],
+) -> JSONResponse:
+    result = await session.execute(select(User).order_by(User.created_at.desc()))
+    users = [user_to_public(u) for u in result.scalars().all()]
+    return JSONResponse(content=success_response({"items": users, "total": len(users)}))
 
 
 @router.get("/admin-only")

@@ -122,6 +122,8 @@ curl -s -X POST http://localhost:8000/incidents/sos \
 | http://localhost:3000/incidents/{id} | Recommendations + assign |
 | http://localhost:3000/alerts | Alerts center |
 | http://localhost:3000/field/assignments | Field team assignments |
+| http://localhost:3000/analytics | Aggregate KPIs (no PII) |
+| http://localhost:3000/settings/users | Admin user management |
 
 Seed operators (after `seed_dev`): `dispatcher@rescuegrid.dev` / `ChangeMeOps123!`, `field@rescuegrid.dev` / `ChangeMeOps123!`.
 
@@ -139,6 +141,15 @@ curl -s -X POST http://localhost:8000/incidents/INCIDENT_UUID/assign \
 ```
 
 Live dashboard: WebSocket `ws://localhost:8000/ws/dashboard?token=ACCESS_TOKEN` (dispatcher/admin). Redis channel `rescuegrid:incidents` fans out classification, assignment, and alert events. Alert worker evaluates critical / delayed-response / escalation rules every 30s (`DELAYED_RESPONSE_THRESHOLD_MINUTES`).
+
+Incident APIs return `ai_summary` / `classification_source`. Personal-safety reporter identity is restricted unless admin or actively assigned (`pii.restricted` + `audit_log`). Analytics: `GET /analytics/overview|incidents-by-category|response-delays|hotspots`.
+
+### Scale & security (Phases 9–10)
+
+- PgBouncer service on port `6432` (optional pooled URL in `.env.example` as `DATABASE_URL_POOLED`; migrate stays on direct Postgres).
+- Second API replica: `docker compose --profile replicas up -d api2` (port `8001`) sharing Redis for WS fan-out.
+- Secure headers middleware; public intake remains `60/minute`.
+- Pre-push lint: `bash scripts/lint-gate.sh` (ruff + eslint + pytest).
 
 ### AI triage worker (Phase 5)
 

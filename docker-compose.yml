@@ -36,6 +36,28 @@ services:
     ports:
       - "6379:6379"
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-rescuegrid}:${POSTGRES_PASSWORD:-rescuegrid}@postgres:5432/${POSTGRES_DB:-rescuegrid}
+      AUTH_TYPE: plain
+      POOL_MODE: session
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rescuegrid
+    ports:
+      - "6432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "hostname"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   migrate:
     build:
       context: ./backend
@@ -62,12 +84,43 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     networks:
       - rescuegrid
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Second API replica for horizontal-scale / IT-14 local verification
+  api2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    profiles: ["replicas"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - rescuegrid
+    ports:
+      - "8001:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -86,6 +139,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      pgbouncer:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully

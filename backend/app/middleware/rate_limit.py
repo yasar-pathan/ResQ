@@ -1,4 +1,4 @@
-"""Rate limit skeleton — tighten on API-005/006 in Phase 4."""
+"""Rate limiting — public intake tight; authenticated ops higher ceiling."""
 
 from fastapi import FastAPI
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -6,7 +6,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["1000/minute"])
+# Global default; API-005/006 override to 60/minute on the route.
+limiter = Limiter(key_func=get_remote_address, default_limits=["300/minute"])
 
 
 def setup_rate_limiting(app: FastAPI) -> Limiter:

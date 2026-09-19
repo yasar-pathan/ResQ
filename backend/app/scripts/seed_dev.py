@@ -1,7 +1,6 @@
 """Idempotent development seed data for Phase 3 ER verification."""
 
 import asyncio
-import uuid
 
 from sqlalchemy import select
 

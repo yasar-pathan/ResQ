@@ -1,4 +1,3 @@
-from app.models.enums import IncidentCategory, IncidentSource
 from app.models.incident import Incident
 
 

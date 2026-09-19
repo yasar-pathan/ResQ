@@ -6,9 +6,15 @@ import { StatusPill } from "@/components/domain/StatusPill";
 import { ApiError, listAssignments, type AssignmentItem } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 
+type FieldAssignment = AssignmentItem & {
+  tracking_ref?: string;
+  incident_status?: string;
+  priority?: string | null;
+};
+
 export default function FieldAssignmentsPage() {
   const { getToken } = useAuth();
-  const [items, setItems] = useState<AssignmentItem[]>([]);
+  const [items, setItems] = useState<FieldAssignment[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -16,7 +22,7 @@ export default function FieldAssignmentsPage() {
     if (!token) return;
     try {
       const data = await listAssignments(token);
-      setItems(data.items);
+      setItems(data.items as FieldAssignment[]);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load assignments");
@@ -42,8 +48,11 @@ export default function FieldAssignmentsPage() {
           <li key={a.id}>
             <Link href={`/field/assignments/${a.id}`} className="field-card">
               <StatusPill status={a.status} />
-              <strong>{a.id.slice(0, 8)}</strong>
-              <span className="muted">{a.decision}</span>
+              <strong>{a.tracking_ref ?? a.id.slice(0, 8)}</strong>
+              <span className="muted">
+                {a.priority ? `${a.priority} · ` : ""}
+                {a.incident_status ?? a.decision}
+              </span>
             </Link>
           </li>
         ))}

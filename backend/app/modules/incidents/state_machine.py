@@ -2,9 +2,14 @@ from app.core.exceptions import ValidationAppError
 from app.models.enums import IncidentStatus
 
 ALLOWED: dict[IncidentStatus, set[IncidentStatus]] = {
-    IncidentStatus.reported: {IncidentStatus.classified, IncidentStatus.possible_duplicate, IncidentStatus.merged},
+    IncidentStatus.reported: {
+        IncidentStatus.classified,
+        IncidentStatus.possible_duplicate,
+        IncidentStatus.merged,
+        IncidentStatus.assigned,
+    },
     IncidentStatus.classified: {IncidentStatus.assigned, IncidentStatus.possible_duplicate, IncidentStatus.merged},
-    IncidentStatus.possible_duplicate: {IncidentStatus.merged, IncidentStatus.classified},
+    IncidentStatus.possible_duplicate: {IncidentStatus.merged, IncidentStatus.classified, IncidentStatus.assigned},
     IncidentStatus.merged: set(),
     IncidentStatus.assigned: {IncidentStatus.in_progress, IncidentStatus.resolved},
     IncidentStatus.in_progress: {IncidentStatus.resolved, IncidentStatus.closed},

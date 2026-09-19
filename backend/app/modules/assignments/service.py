@@ -161,6 +161,12 @@ class AssignmentService:
         incident = await self.session.get(Incident, assignment.incident_id)
         resource = await self.session.get(Resource, assignment.resource_id)
         if incident:
+            from app.modules.incidents.pii import resolve_pii_visibility
+
+            pii = await resolve_pii_visibility(self.session, incident, actor)
+            desc = incident.description
+            if pii.get("restricted"):
+                desc = None
             data["incident"] = {
                 "id": str(incident.id),
                 "tracking_ref": incident.tracking_ref,
@@ -168,10 +174,10 @@ class AssignmentService:
                 "priority": incident.priority.value if incident.priority else None,
                 "status": incident.status.value,
                 "ai_summary": incident.ai_summary,
-                "description": incident.description
-                if incident.category.value != "personal_safety"
-                else None,
+                "description": desc,
+                "pii": pii,
             }
+            await self.session.commit()
         if resource:
             data["resource"] = {
                 "id": str(resource.id),
@@ -340,7 +346,16 @@ class AssignmentService:
             .where(Assignment.assignee_user_id == user_id)
             .order_by(Assignment.created_at.desc())
         )
-        return [serialize_assignment(a) for a in result.scalars().all()]
+        items = []
+        for a in result.scalars().all():
+            data = serialize_assignment(a)
+            incident = await self.session.get(Incident, a.incident_id)
+            if incident:
+                data["tracking_ref"] = incident.tracking_ref
+                data["incident_status"] = incident.status.value
+                data["priority"] = incident.priority.value if incident.priority else None
+            items.append(data)
+        return items
 
     async def list_active(self) -> list[dict]:
         result = await self.session.execute(

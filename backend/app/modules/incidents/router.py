@@ -60,7 +60,7 @@ async def create_sos(
 @router.get("")
 async def list_incidents(
     session: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_role(UserRole.dispatcher, UserRole.admin))],
+    viewer: Annotated[User, Depends(require_role(UserRole.dispatcher, UserRole.admin))],
     category: IncidentCategory | None = None,
     priority: str | None = None,
     status_filter: IncidentStatus | None = Query(default=None, alias="status"),
@@ -75,7 +75,7 @@ async def list_incidents(
         limit=limit,
     )
     service = IncidentService(session)
-    data = await service.list_incidents(params)
+    data = await service.list_incidents(params, viewer=viewer)
     return JSONResponse(content=success_response(data))
 
 

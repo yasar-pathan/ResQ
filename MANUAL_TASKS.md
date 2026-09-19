@@ -188,12 +188,14 @@ docker compose run --rm api python -m app.scripts.seed_dev
 
 ### Manual checks
 
-1. Open http://localhost:3000/login → sign in as dispatcher → `/dashboard` shows queue + map.
+1. Open http://localhost:3000/login → sign in as dispatcher → `/dashboard` shows queue + map (filters + incident/resource layers).
 2. Open a second browser session on `/dashboard`; create an incident via citizen `/report`; both dashboards should refresh via WebSocket within ~5s after classification.
-3. Open `/incidents/{id}` → Accept AI recommendation → resource becomes assigned; field user sees it under `/field/assignments`.
+3. Open `/incidents/{id}` → Accept AI or Manual assign → resource becomes assigned; field user sees tracking_ref under `/field/assignments`.
 4. Field user updates status en_route → on_scene → completed.
 5. Leave an incident unassigned past `DELAYED_RESPONSE_THRESHOLD_MINUTES` (or lower the env for demo) → `/alerts` shows delayed_response; Acknowledge clears it from active.
 6. SOS with trusted contact → check API logs for `SMS_SIMULATED` minimal payload (no full description).
+7. Notification bell in operator shell lists recent notifications.
+8. `/analytics` KPIs load without reporter identity; admin `/settings/users` can create ops accounts.
 
 ### Optional API smoke
 
@@ -201,8 +203,25 @@ docker compose run --rm api python -m app.scripts.seed_dev
 # After login, export TOKEN=...
 curl -s http://localhost:8000/alerts -H "Authorization: Bearer $TOKEN"
 curl -s http://localhost:8000/notifications -H "Authorization: Bearer $TOKEN"
+curl -s http://localhost:8000/analytics/overview -H "Authorization: Bearer $TOKEN"
 ```
 
-## 8. Next
+### Lint before push
 
-Phase 9 — analytics dashboard + hardened PII visibility across read paths.
+```bash
+bash scripts/lint-gate.sh
+# or manually:
+docker compose run --rm api ruff check app tests
+docker compose run --rm frontend sh -c "npm run lint && npm test"
+docker compose run --rm api pytest -q
+```
+
+## 8. Phase 9–10 notes
+
+- PII: unassigned dispatcher on personal_safety gets `pii.restricted=true` and `audit_log` `pii.denied`.
+- Scale: `docker compose --profile replicas up -d` starts `api2` on `:8001`.
+- PgBouncer listens on host `6432`; set `DATABASE_URL` to pooled DSN only after validating asyncpg + PostGIS with your pool mode.
+
+## 9. Next
+
+Phase 11 — production deploy, full regression, Final Implementation Report.

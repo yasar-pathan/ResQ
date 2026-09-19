@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -48,12 +47,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        cid = _correlation_id(request)
-        logger.exception("Unhandled exception", extra={"correlation_id": cid})
+        logger.exception("Unhandled error", extra={"path": str(request.url.path)})
         body = error_response(
             code="internal_server_error",
-            details={},
-            message="An unexpected error occurred",
-            correlation_id=cid,
+            message="Internal server error",
+            correlation_id=_correlation_id(request),
         )
         return JSONResponse(status_code=500, content=body)

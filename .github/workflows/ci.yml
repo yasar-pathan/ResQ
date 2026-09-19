@@ -53,11 +53,19 @@ jobs:
       - name: Backend smoke tests
         run: docker compose run --rm api pytest
 
+      - name: Frontend lint
+        run: docker compose run --rm frontend sh -c "npm ci && npm run lint"
+
       - name: Frontend unit tests
         run: docker compose run --rm frontend sh -c "npm ci && npm test"
 
       - name: Frontend production build
         run: docker compose run --rm frontend sh -c "npm ci && npm run build"
+
+      - name: Dependency audits
+        run: |
+          docker compose run --rm api sh -c "pip install --quiet pip-audit==2.7.3 && pip-audit -r requirements.txt || true"
+          docker compose run --rm frontend sh -c "npm ci && npm audit --audit-level=high || true"
 
       - name: Tear down
         if: always()
@@ -65,6 +73,9 @@ jobs:
 
   backend-lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,4 +84,19 @@ jobs:
       - name: Ruff check
         run: |
           pip install ruff==0.8.4
-          ruff check backend/app backend/tests
+          ruff check app tests
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: ESLint
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint

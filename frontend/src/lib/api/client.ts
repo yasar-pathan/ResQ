@@ -183,15 +183,25 @@ export async function getMe(token: string): Promise<UserPublic> {
 
 export type IncidentListItem = IncidentCreated & {
   ai_summary?: string | null;
+  classification_source?: string | null;
+  classified_at?: string | null;
   tracking_ref: string;
 };
 
 export async function listIncidents(
   token: string,
-  params?: { status?: string; page?: number; limit?: number },
+  params?: {
+    status?: string;
+    category?: string;
+    priority?: string;
+    page?: number;
+    limit?: number;
+  },
 ): Promise<{ items: IncidentListItem[]; total: number; page: number; limit: number }> {
   const qs = new URLSearchParams();
   if (params?.status) qs.set("status", params.status);
+  if (params?.category) qs.set("category", params.category);
+  if (params?.priority) qs.set("priority", params.priority);
   qs.set("page", String(params?.page ?? 1));
   qs.set("limit", String(params?.limit ?? 50));
   const res = await fetch(`${getApiBaseUrl()}/incidents?${qs}`, {
@@ -239,6 +249,28 @@ export async function assignResource(
     method: "POST",
     headers: { ...authHeaders(token), "Content-Type": "application/json" },
     body: JSON.stringify(body),
+  });
+  return parseEnvelope(res);
+}
+
+export type ResourceItem = {
+  id: string;
+  type: string;
+  name: string;
+  status: string;
+  location: { latitude: number; longitude: number };
+};
+
+export async function listResources(
+  token: string,
+  params?: { status?: string },
+): Promise<{ items: ResourceItem[] }> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  qs.set("limit", "100");
+  const res = await fetch(`${getApiBaseUrl()}/resources?${qs}`, {
+    headers: authHeaders(token),
+    cache: "no-store",
   });
   return parseEnvelope(res);
 }
