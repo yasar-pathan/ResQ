@@ -19,10 +19,11 @@ module.exports = {
         info: "#0369a1",
         border: "#e2e8f0",
         sidebar: {
-          DEFAULT: "#0f172a",
-          foreground: "#e2e8f0",
-          muted: "#94a3b8",
-          accent: "#1e293b",
+          DEFAULT: "#ffffff",
+          foreground: "#0f172a",
+          muted: "#64748b",
+          accent: "#f1f5f9",
+          border: "#e2e8f0",
         },
       },
       borderRadius: {

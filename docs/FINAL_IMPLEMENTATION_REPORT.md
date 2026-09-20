@@ -159,6 +159,13 @@ docker compose run --rm api alembic current
 | Help Desk Hero Media Integrity | Reverted `public/media/help-desk-mobile.jpg` and CSS veil/brightness to original authentic color vibrancy and contrast, per binding design rules. |
 | Docker-Native Build Rule | Mandated and verified that all frontend builds (`npm run build`, `npm install`) MUST execute inside Docker containers (`docker compose run --rm frontend npm run build`), strictly prohibiting local host builds. |
 
+### Phase 16.2 — Analytics Chart Legends & Sidebar Light Palette Harmony
+
+| Component / Area | What shipped |
+|---|---|
+| Chart Legends | Implemented `ChartLegend` and `ChartLegendContent` in `Chart.tsx`. Integrated responsive, color-matched legends across the Status distribution (pie) and Incidents by category (bar) charts on `/analytics`. |
+| Sidebar Color Harmonization | Unified the Shadcn Sidebar suite with the light design tokens (`bg-surface`, `border-r border-border`, `text-slate-900`) in `Sidebar.tsx`, `tailwind.config.js`, and `OperatorShell.tsx`. Completely eliminated the inverted dark sidebar contrast, harmonizing navigation with the top bar, dashboard panels, and modal dialogs. |
+
 
 
 

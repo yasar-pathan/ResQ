@@ -78,7 +78,7 @@ function SidebarProfileDropdown({
         <button
           type="button"
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-control p-2 text-left transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-1 focus:ring-primary",
+            "flex w-full items-center gap-2.5 rounded-control p-2 text-left transition-colors hover:bg-slate-100 focus:outline-none focus:ring-1 focus:ring-primary",
             collapsed && "justify-center p-1.5",
           )}
           aria-label="User account settings"
@@ -92,14 +92,14 @@ function SidebarProfileDropdown({
           {!collapsed ? (
             <>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">
+                <p className="truncate text-sm font-semibold leading-tight text-slate-900">
                   {name || "Operator"}
                 </p>
-                <p className="truncate text-xs capitalize text-sidebar-muted">
+                <p className="truncate text-xs capitalize text-muted">
                   {role?.replaceAll("_", " ") || "Personnel"}
                 </p>
               </div>
-              <ChevronUp className="h-4 w-4 shrink-0 text-sidebar-muted" />
+              <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />
             </>
           ) : (
             <span className="sr-only">{name}</span>
@@ -164,11 +164,15 @@ function ShellNavItems({
             <Link
               href={l.href}
               onClick={onNavigate}
-              className="block no-underline"
+              className="block no-underline text-inherit"
               title={collapsed ? l.label : undefined}
             >
               <SidebarMenuButton isActive={active}>
-                <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+                <Icon
+                  className={cn("h-4 w-4 shrink-0", active ? "text-white" : "text-slate-500")}
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
                 {!collapsed ? <span>{l.label}</span> : <span className="sr-only">{l.label}</span>}
               </SidebarMenuButton>
             </Link>
@@ -215,16 +219,16 @@ function OperatorShellInner({ children }: { children: ReactNode }) {
               <Menu className="h-5 w-5" strokeWidth={1.75} />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="bg-sidebar p-0">
+          <SheetContent side="left" className="bg-surface border-r border-border p-0">
             <div className="flex h-full flex-col">
-              <div className="flex h-14 items-center justify-between border-b border-white/10 px-3">
-                <span className="text-sm font-semibold text-sidebar-foreground">
+              <div className="flex h-14 items-center justify-between border-b border-border px-3">
+                <span className="text-sm font-semibold text-slate-900">
                   RescueGrid Operations
                 </span>
                 <SheetClose asChild>
                   <button
                     type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-control text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-white"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-control text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     aria-label="Close menu"
                   >
                     <X className="h-5 w-5" strokeWidth={1.75} />
@@ -238,7 +242,7 @@ function OperatorShellInner({ children }: { children: ReactNode }) {
                   onNavigate={() => setMobileOpen(false)}
                 />
               </div>
-              <div className="mt-auto border-t border-white/10 p-2">
+              <div className="mt-auto border-t border-border p-2">
                 <SidebarProfileDropdown
                   name={user?.name}
                   role={user?.role}
@@ -258,9 +262,9 @@ function OperatorShellInner({ children }: { children: ReactNode }) {
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <Sidebar>
-          <SidebarHeader className="justify-between gap-2">
+          <SidebarHeader className="justify-between gap-2 border-b border-border">
             {!collapsed ? (
-              <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-sidebar-foreground">
+              <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-slate-900">
                 RescueGrid Ops
               </p>
             ) : null}

@@ -10,7 +10,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { ResponsiveContainer, Tooltip } from "recharts";
+import { ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 
 // Format: { [k in string]: { label?: React.ReactNode; icon?: React.ComponentType; color?: string; theme?: Record<string, string> } }
@@ -169,3 +169,66 @@ export const ChartTooltipContent = forwardRef<
     </div>
   );
 });
+
+export const ChartLegend = Legend;
+
+export const ChartLegendContent = forwardRef<
+  HTMLDivElement,
+  ComponentProps<"div"> & {
+    payload?: Array<{
+      value?: string;
+      id?: string;
+      type?: string;
+      color?: string;
+      dataKey?: string;
+      payload?: Record<string, unknown>;
+    }>;
+    verticalAlign?: "top" | "bottom";
+    hideIcon?: boolean;
+    nameKey?: string;
+  }
+>(function ChartLegendContent(
+  { className, hideIcon = false, payload, verticalAlign = "bottom", nameKey },
+  ref,
+) {
+  const { config } = useChart();
+
+  if (!payload?.length) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-slate-600",
+        verticalAlign === "top" ? "pb-2" : "pt-2",
+        className,
+      )}
+    >
+      {payload.map((item, i) => {
+        const key = `${nameKey || item.dataKey || item.value || "value"}`;
+        const itemConfig = config[key] || config[item.value as string];
+        const color = item.color || itemConfig?.color || "#1e3a8a";
+
+        return (
+          <div
+            key={`${item.value}-${i}`}
+            className="flex items-center gap-1.5"
+          >
+            {!hideIcon ? (
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+            ) : null}
+            <span className="text-slate-700 capitalize">
+              {itemConfig?.label || item.value}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+

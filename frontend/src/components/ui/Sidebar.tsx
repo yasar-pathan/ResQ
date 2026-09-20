@@ -95,7 +95,7 @@ export const Sidebar = forwardRef<
     <aside
       ref={ref}
       className={cn(
-        "relative hidden shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
+        "relative hidden shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
         collapsed ? "w-[64px]" : "w-[220px]",
         className,
       )}
@@ -114,7 +114,7 @@ export const SidebarHeader = forwardRef<HTMLDivElement, ComponentProps<"div">>(
       <div
         ref={ref}
         className={cn(
-          "flex h-14 shrink-0 items-center border-b border-white/10 px-3",
+          "flex h-14 shrink-0 items-center border-b border-border px-3",
           className,
         )}
         {...props}
@@ -207,7 +207,7 @@ export const SidebarFooter = forwardRef<HTMLDivElement, ComponentProps<"div">>(
     return (
       <div
         ref={ref}
-        className={cn("mt-auto shrink-0 border-t border-white/10 p-2", className)}
+        className={cn("mt-auto shrink-0 border-t border-border p-2", className)}
         {...props}
       />
     );

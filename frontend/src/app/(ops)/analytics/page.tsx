@@ -15,6 +15,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/Chart";
 import { HotspotsMapDynamic } from "@/components/maps/HotspotsMapDynamic";
@@ -192,7 +194,7 @@ export default function AnalyticsPage() {
               {statusPie.length === 0 ? (
                 <p className="empty-state">No status slices yet.</p>
               ) : (
-                <div className="h-64 w-full">
+                <div className="h-72 w-full">
                   <ChartContainer
                     config={STATUS_CHART_CONFIG}
                     className="mx-auto h-full w-full aspect-auto"
@@ -207,15 +209,16 @@ export default function AnalyticsPage() {
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
-                        cy="50%"
-                        innerRadius={58}
-                        outerRadius={88}
+                        cy="42%"
+                        innerRadius={48}
+                        outerRadius={72}
                         paddingAngle={2}
                       >
                         {statusPie.map((entry) => (
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
+                      <ChartLegend content={<ChartLegendContent />} />
                     </PieChart>
                   </ChartContainer>
                 </div>
@@ -245,7 +248,7 @@ export default function AnalyticsPage() {
         {categoryBars.length === 0 ? (
           <p className="empty-state">No category data.</p>
         ) : (
-          <div className="h-72 w-full">
+          <div className="h-80 w-full">
             <ChartContainer
               config={CATEGORY_CHART_CONFIG}
               className="h-full w-full aspect-auto"
@@ -258,6 +261,7 @@ export default function AnalyticsPage() {
                   cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}
                   content={<ChartTooltipContent indicator="line" />}
                 />
+                <ChartLegend content={<ChartLegendContent />} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {categoryBars.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS.bars[i % CHART_COLORS.bars.length]} />
