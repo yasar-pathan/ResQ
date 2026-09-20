@@ -50,6 +50,8 @@ function ResourcesPageInner() {
   const { getToken, refreshSession, user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
+  const isDispatcher = user?.role === "dispatcher";
+  const canManage = isAdmin || isDispatcher;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -61,9 +63,43 @@ function ResourcesPageInner() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [type, setType] = useState<(typeof RESOURCE_TYPES)[number]>("team");
-  const [lat, setLat] = useState("12.9716");
-  const [lng, setLng] = useState("77.5946");
+  const [lat, setLat] = useState("23.0225");
+  const [lng, setLng] = useState("72.5714");
+  const [locating, setLocating] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  const GUJARAT_PRESETS = [
+    { label: "Ahmedabad", lat: "23.0225", lng: "72.5714" },
+    { label: "Gandhinagar", lat: "23.2156", lng: "72.6369" },
+    { label: "Surat", lat: "21.1702", lng: "72.8311" },
+    { label: "Vadodara", lat: "22.3072", lng: "73.1812" },
+    { label: "Rajkot", lat: "22.3039", lng: "70.8022" },
+  ];
+
+  const handleGetGPS = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      toast({ title: "GPS Unavailable", description: "Browser geolocation not supported.", variant: "error" });
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(4));
+        setLng(pos.coords.longitude.toFixed(4));
+        setLocating(false);
+        toast({
+          title: "GPS Acquired",
+          description: `Location set to ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
+          variant: "success",
+        });
+      },
+      (err) => {
+        setLocating(false);
+        toast({ title: "GPS Acquisition Failed", description: err.message, variant: "error" });
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   const patchParams = useCallback(
     (mutate: (qs: URLSearchParams) => void) => {
@@ -115,7 +151,7 @@ function ResourcesPageInner() {
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     const token = getToken();
-    if (!token || !isAdmin) return;
+    if (!token || !canManage) return;
     setMessage(null);
     setCreating(true);
     try {
@@ -124,9 +160,9 @@ function ResourcesPageInner() {
         name,
         location: { latitude: Number(lat), longitude: Number(lng) },
       });
-      const msg = `Created ${name}`;
+      const msg = `Created resource: ${name}`;
       setMessage(msg);
-      toast({ title: "Resource added", description: msg, variant: "success" });
+      toast({ title: "Resource Added", description: msg, variant: "success" });
       setName("");
       await load();
     } catch (err) {
@@ -140,7 +176,7 @@ function ResourcesPageInner() {
 
   async function onDeactivate(id: string) {
     const token = getToken();
-    if (!token || !isAdmin) return;
+    if (!token || !canManage) return;
     try {
       await updateResource(token, id, { is_active: false });
       setMessage("Resource deactivated");
@@ -232,15 +268,20 @@ function ResourcesPageInner() {
         </section>
 
         <section className="flex min-h-0 flex-col gap-3 overflow-hidden">
-          {isAdmin ? (
+          {canManage ? (
             <form
-              className="stack shrink-0 gap-2 rounded-panel border border-border bg-surface p-3"
+              className="stack shrink-0 gap-2.5 rounded-panel border border-border bg-surface p-3.5 shadow-sm"
               onSubmit={onCreate}
             >
-              <h2 className="text-sm font-bold">Add resource</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-slate-900">Add Emergency Resource</h2>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                  {isAdmin ? "Admin Access" : "Dispatcher Access"}
+                </span>
+              </div>
               <input
                 className="field"
-                placeholder="Name"
+                placeholder="Resource Name (e.g. 108 Ambulance Unit 4)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -265,24 +306,57 @@ function ResourcesPageInner() {
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <div className="filter-row !mt-0">
-                <input
-                  className="field"
-                  placeholder="Latitude"
-                  value={lat}
-                  onChange={(e) => setLat(e.target.value)}
-                  required
-                />
-                <input
-                  className="field"
-                  placeholder="Longitude"
-                  value={lng}
-                  onChange={(e) => setLng(e.target.value)}
-                  required
-                />
+
+              {/* Coordinates & Location Helpers */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted">Location Coordinates</span>
+                  <button
+                    type="button"
+                    onClick={handleGetGPS}
+                    disabled={locating}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    <MapPin className="h-3 w-3" />
+                    {locating ? "Locating…" : "Use My GPS"}
+                  </button>
+                </div>
+                <div className="filter-row !mt-0">
+                  <input
+                    className="field"
+                    placeholder="Latitude"
+                    value={lat}
+                    onChange={(e) => setLat(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="field"
+                    placeholder="Longitude"
+                    value={lng}
+                    onChange={(e) => setLng(e.target.value)}
+                    required
+                  />
+                </div>
+                {/* Gujarat Quick Presets */}
+                <div className="flex flex-wrap items-center gap-1 pt-1">
+                  <span className="text-[10px] text-muted">Gujarat:</span>
+                  {GUJARAT_PRESETS.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => {
+                        setLat(p.lat);
+                        setLng(p.lng);
+                      }}
+                      className="rounded border border-border bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-100 transition"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <Button type="submit" size="sm" loading={creating}>
-                Create
+              <Button type="submit" size="sm" loading={creating} className="w-full">
+                Register Resource
               </Button>
             </form>
           ) : null}
@@ -374,7 +448,7 @@ function ResourcesPageInner() {
                           <MapPin className="h-5 w-5" strokeWidth={1.75} />
                         </button>
                       </Tooltip>
-                      {isAdmin ? (
+                      {canManage ? (
                         <Tooltip tip="Deactivate this resource from service">
                           <Button
                             type="button"

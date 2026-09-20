@@ -38,7 +38,7 @@ async def list_resources(
 async def create_resource(
     body: ResourceCreateRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_role(UserRole.admin))],
+    _: Annotated[User, Depends(require_role(UserRole.dispatcher, UserRole.admin))],
 ) -> JSONResponse:
     service = ResourceService(session)
     data = await service.create(body)
@@ -50,7 +50,7 @@ async def update_resource(
     resource_id: uuid.UUID,
     body: ResourceUpdateRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_role(UserRole.admin))],
+    _: Annotated[User, Depends(require_role(UserRole.dispatcher, UserRole.admin))],
 ) -> JSONResponse:
     service = ResourceService(session)
     data = await service.update(resource_id, body)

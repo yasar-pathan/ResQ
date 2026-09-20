@@ -7,6 +7,7 @@ T = TypeVar("T")
 
 class ErrorBody(BaseModel):
     code: str
+    message: str | None = None
     details: dict[str, Any] = Field(default_factory=dict)
     correlation_id: str | None = None
 

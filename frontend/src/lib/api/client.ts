@@ -19,7 +19,7 @@ type Envelope<T> = {
   success: boolean;
   data: T;
   message?: string;
-  error?: { code: string; message: string; details?: unknown };
+  error?: { code: string; message?: string; details?: unknown };
 };
 
 export class ApiError extends Error {
@@ -36,13 +36,27 @@ export class ApiError extends Error {
 }
 
 async function parseEnvelope<T>(res: Response): Promise<T> {
-  const body = (await res.json()) as Envelope<T>;
-  if (!res.ok || body.success === false) {
+  let body: Envelope<T> | null = null;
+  try {
+    body = (await res.json()) as Envelope<T>;
+  } catch {
+    body = null;
+  }
+
+  if (!res.ok || !body || body.success === false) {
+    const details = body?.error?.details as { errors?: Array<{ msg?: string }> } | undefined;
+    const validationMsg = details?.errors?.[0]?.msg;
+    const message =
+      body?.message ||
+      body?.error?.message ||
+      validationMsg ||
+      (res.status === 401 ? "Invalid email or password" : `Request failed (${res.status})`);
+
     throw new ApiError(
       res.status,
-      body.error?.code ?? "request_failed",
-      body.error?.message ?? `Request failed (${res.status})`,
-      body.error?.details,
+      body?.error?.code ?? (res.status === 401 ? "invalid_credentials" : "request_failed"),
+      message,
+      body?.error?.details,
     );
   }
   return body.data;

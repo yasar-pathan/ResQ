@@ -1,8 +1,8 @@
 "use client";
 
 import L from "leaflet";
-import { useState } from "react";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { BENGALURU_CENTER, INDIA_MAP_PROPS } from "@/lib/maps/india";
 
@@ -12,6 +12,16 @@ const pin = L.divIcon({
   iconAnchor: [8, 8],
   html: `<span style="display:block;width:16px;height:16px;border-radius:999px;background:#1e3a8a;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>`,
 });
+
+function MapRecenter({ lat, lng }: { lat: number | null; lng: number | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)) {
+      map.flyTo([lat, lng], Math.max(map.getZoom(), 14), { duration: 0.8 });
+    }
+  }, [lat, lng, map]);
+  return null;
+}
 
 function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }) {
   useMapEvents({
@@ -46,6 +56,7 @@ export default function LocationPickerMap({
       {...INDIA_MAP_PROPS}
     >
       <TileLayer attribution="&copy; OSM" url={url} />
+      <MapRecenter lat={latitude} lng={longitude} />
       <ClickHandler onPick={onPick} />
       {latitude != null && longitude != null ? (
         <Marker position={[latitude, longitude]} icon={pin} />

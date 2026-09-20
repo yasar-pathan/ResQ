@@ -47,10 +47,12 @@ def build_reason(
     distance_meters: float,
     capability_match: bool,
     category: str,
+    is_primary: bool = True,
 ) -> str:
     km = distance_meters / 1000.0
     match = f"matches {category}" if capability_match else "partial capability match"
-    return f"{name}: nearest available unit, {km:.1f}km, {match}"
+    proximity_desc = "nearest available unit" if is_primary else "alternate nearby unit"
+    return f"{name}: {proximity_desc}, {km:.1f}km, {match}"
 
 
 def rank_candidates(candidates: list[RankedCandidate], limit: int = 3) -> list[RankedCandidate]:

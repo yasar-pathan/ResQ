@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChevronDown, MapPin } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -31,6 +32,7 @@ import {
 } from "@/lib/api/client";
 import { useAuth, withAuthRetry } from "@/lib/auth";
 import { INCIDENT_CATEGORIES } from "@/lib/reportValidation";
+import { haversineDistanceKm } from "@/lib/maps/india";
 
 function priorityRank(p: string | null | undefined): number {
   const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -86,6 +88,36 @@ function DashboardInner() {
   const [showIncidents, setShowIncidents] = useState(true);
   const [showResources, setShowResources] = useState(true);
   const [openingId, setOpeningId] = useState<string | null>(null);
+
+  // Dispatcher location tracking & near-me incident filter
+  const [dispatcherLoc, setDispatcherLoc] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [nearMeRadius, setNearMeRadius] = useState<number | null>(50); // Default 50 km proximity filter
+  const [locatingDispatcher, setLocatingDispatcher] = useState(false);
+
+  // Automatically track dispatcher location upon mounting/login
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      // Default fallback to Gujarat Central Operations (Ahmedabad)
+      setDispatcherLoc({ latitude: 23.0225, longitude: 72.5714 });
+      return;
+    }
+    setLocatingDispatcher(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setDispatcherLoc({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        setLocatingDispatcher(false);
+      },
+      (_err) => {
+        // Fallback to Ahmedabad HQ if browser GPS denied
+        setDispatcherLoc({ latitude: 23.0225, longitude: 72.5714 });
+        setLocatingDispatcher(false);
+      },
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+  }, []);
 
   const patchParams = useCallback(
     (mutate: (qs: URLSearchParams) => void) => {
@@ -172,9 +204,40 @@ function DashboardInner() {
     };
   }, [getToken, load]);
 
+  // Filter incidents near dispatcher when radius is active
+  const displayedIncidents = useMemo(() => {
+    if (!nearMeRadius || !dispatcherLoc) return incidents;
+    return incidents.filter((inc) => {
+      const d = haversineDistanceKm(
+        dispatcherLoc.latitude,
+        dispatcherLoc.longitude,
+        inc.location.latitude,
+        inc.location.longitude
+      );
+      return d <= nearMeRadius;
+    });
+  }, [incidents, nearMeRadius, dispatcherLoc]);
+
+  // Filter resources near dispatcher when radius is active
+  const displayedResources = useMemo(() => {
+    if (!nearMeRadius || !dispatcherLoc) return resources;
+    return resources.filter((r) => {
+      const d = haversineDistanceKm(
+        dispatcherLoc.latitude,
+        dispatcherLoc.longitude,
+        r.location.latitude,
+        r.location.longitude
+      );
+      return d <= nearMeRadius * 1.5;
+    });
+  }, [resources, nearMeRadius, dispatcherLoc]);
+
   const selected = useMemo(
-    () => incidents.find((i) => i.id === selectedId) ?? null,
-    [incidents, selectedId],
+    () =>
+      displayedIncidents.find((i) => i.id === selectedId) ??
+      incidents.find((i) => i.id === selectedId) ??
+      null,
+    [displayedIncidents, incidents, selectedId],
   );
 
   return (
@@ -195,6 +258,36 @@ function DashboardInner() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="filter-row !mt-0 flex flex-wrap gap-2">
+            {/* Proximity / Near-Me Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-9 items-center justify-between gap-1.5 rounded-control border border-blue-300 bg-blue-50/90 px-3 text-xs font-semibold text-blue-900 shadow-sm transition hover:bg-blue-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                  aria-label="Filter by Proximity to Dispatcher"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className={`inline-block h-2 w-2 rounded-full ${nearMeRadius ? "bg-blue-600 animate-pulse" : "bg-slate-400"}`} />
+                    {nearMeRadius ? `Near Me (${nearMeRadius} km)` : "Radius: All Incidents"}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 text-blue-700" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Dispatcher Proximity Filter</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={nearMeRadius ? String(nearMeRadius) : "all"}
+                  onValueChange={(val) => setNearMeRadius(val === "all" ? null : Number(val))}
+                >
+                  <DropdownMenuRadioItem value="25">Within 25 km (Immediate)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="50">Within 50 km (Metro & Suburbs)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="100">Within 100 km (Regional)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="all">Show All Incidents</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Category Filter Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -300,11 +393,18 @@ function DashboardInner() {
           aria-label="Incident queue"
         >
           <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-            <h2 className="text-base font-bold">Queue</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold">Queue</h2>
+              {nearMeRadius ? (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800 border border-blue-200">
+                  ≤ {nearMeRadius} km
+                </span>
+              ) : null}
+            </div>
             {loading ? (
               <span className="text-xs text-muted">Refreshing…</span>
             ) : (
-              <span className="text-xs text-muted">{incidents.length} active</span>
+              <span className="text-xs text-muted">{displayedIncidents.length} in view</span>
             )}
           </div>
           <ScrollArea className="min-h-0 flex-1" withFade hideScrollbar>
@@ -333,11 +433,30 @@ function DashboardInner() {
                   ))}
                 </>
               ) : null}
-              {!loading && incidents.length === 0 ? (
-                <li className="empty-state p-4 text-sm">No active incidents in queue — standing by.</li>
+              {!loading && displayedIncidents.length === 0 ? (
+                <li className="empty-state p-4 text-sm text-center">
+                  <p className="text-slate-700">No incidents found within {nearMeRadius ? `${nearMeRadius} km` : "selected filters"}.</p>
+                  {nearMeRadius ? (
+                    <button
+                      type="button"
+                      onClick={() => setNearMeRadius(null)}
+                      className="mt-2.5 inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+                    >
+                      Show All Incidents (State-wide)
+                    </button>
+                  ) : null}
+                </li>
               ) : null}
-              {incidents.map((inc) => {
+              {displayedIncidents.map((inc) => {
                 const enriched = inc as IncidentListItemEnriched;
+                const distKm = dispatcherLoc
+                  ? haversineDistanceKm(
+                      dispatcherLoc.latitude,
+                      dispatcherLoc.longitude,
+                      inc.location.latitude,
+                      inc.location.longitude
+                    )
+                  : null;
                 return (
                   <li
                     key={inc.id}
@@ -361,6 +480,12 @@ function DashboardInner() {
                           </span>
                           <StatusPill status={inc.status} />
                           <SourceChip source={inc.source} />
+                          {distKm !== null ? (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-200/70">
+                              <MapPin className="h-2.5 w-2.5" />
+                              {distKm.toFixed(1)} km away
+                            </span>
+                          ) : null}
                         </div>
                         <ClassificationReviewBadge confidence={inc.ai_confidence} className="w-fit" />
                         <strong className="block text-xs">{inc.tracking_ref}</strong>
@@ -456,12 +581,14 @@ function DashboardInner() {
           </div>
           <div className="relative min-h-[45dvh] flex-1 lg:min-h-0">
             <OpsMapDynamic
-              incidents={incidents}
-              resources={resources}
+              incidents={displayedIncidents}
+              resources={displayedResources}
               showIncidents={showIncidents}
               showResources={showResources}
               selectedId={selectedId}
               onSelectIncident={setSelectedId}
+              dispatcherLocation={dispatcherLoc}
+              radiusKm={nearMeRadius}
               height="100%"
               className="absolute inset-0 rounded-none border-0"
             />

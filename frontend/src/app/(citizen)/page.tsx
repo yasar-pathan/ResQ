@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, FileWarning } from "lucide-react";
+import { AlertTriangle, FileWarning, LogIn } from "lucide-react";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { InstallHint } from "@/components/layout/InstallHint";
 
@@ -12,8 +12,12 @@ export default function HomePage() {
           <img src="/media/help-desk-mobile.jpg" alt="" className="home-hero-img" />
           <div className="home-hero-veil" />
         </div>
-        <div className="home-hero-brand">
+        <div className="home-hero-topbar">
           <BrandMark href="/" size={36} variant="light" />
+          <Link href="/login" className="home-login-btn">
+            <LogIn size={18} aria-hidden />
+            <span>Operator Sign-in</span>
+          </Link>
         </div>
         <div className="home-hero-content animate-enter">
           <p className="home-eyebrow">Emergency coordination</p>
@@ -36,7 +40,10 @@ export default function HomePage() {
           </div>
         </div>
         <p className="home-hero-links home-hero-links-centered animate-enter-delay">
-          Dispatcher or field team? <Link href="/login">Operator sign-in</Link>
+          Dispatcher or field team?{" "}
+          <Link href="/login" className="home-bottom-pill">
+            Operator Sign-in
+          </Link>
           {" · "}
           <Link href="/register">Create citizen account</Link>
         </p>

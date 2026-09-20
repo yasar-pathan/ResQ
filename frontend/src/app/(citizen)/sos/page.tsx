@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LocationPicker } from "@/components/maps/LocationPicker";
 import { SOSButton } from "@/components/domain/SOSButton";
 import { ApiError, createSos } from "@/lib/api/client";
 import { getCurrentPosition } from "@/lib/geo";
@@ -73,7 +74,7 @@ export default function SosPage() {
         lng < -180 ||
         lng > 180
       ) {
-        setError("Enter valid latitude and longitude to send SOS.");
+        setError("Please select your location on the map to send SOS.");
         return;
       }
     } else {
@@ -154,43 +155,69 @@ export default function SosPage() {
           <p className="muted">Getting your location…</p>
         ) : null}
         {location.status === "ready" ? (
-          <p>
-            Location ready: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-          </p>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.75rem 1rem",
+              borderRadius: "var(--radius-control)",
+              background: "rgba(16, 185, 129, 0.08)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+            }}
+          >
+            <div>
+              <p style={{ fontWeight: 600, color: "#10b981", fontSize: "0.95rem" }}>
+                ✔ Location Captured
+              </p>
+              <p className="muted" style={{ fontSize: "0.85rem", marginTop: "0.15rem" }}>
+                {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              style={{ fontSize: "0.85rem", textDecoration: "underline" }}
+              onClick={() =>
+                setLocation({
+                  status: "manual",
+                  latitude: String(location.latitude),
+                  longitude: String(location.longitude),
+                  hint: "Tap on the map to fine-tune your location",
+                })
+              }
+            >
+              Adjust on map
+            </button>
+          </div>
         ) : null}
         {location.status === "manual" ? (
-          <div className="stack">
-            <p className="muted">{location.hint}</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-              <div>
-                <label className="label" htmlFor="sos-lat">
-                  Latitude
-                </label>
-                <input
-                  id="sos-lat"
-                  className="field"
-                  inputMode="decimal"
-                  value={location.latitude}
-                  onChange={(e) =>
-                    setLocation({ ...location, latitude: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="label" htmlFor="sos-lng">
-                  Longitude
-                </label>
-                <input
-                  id="sos-lng"
-                  className="field"
-                  inputMode="decimal"
-                  value={location.longitude}
-                  onChange={(e) =>
-                    setLocation({ ...location, longitude: e.target.value })
-                  }
-                />
-              </div>
-            </div>
+          <div className="stack" style={{ gap: "0.6rem" }}>
+            <p className="muted" style={{ fontSize: "0.9rem" }}>
+              {location.hint || "Device GPS unavailable. Pin your position on the map:"}
+            </p>
+            <LocationPicker
+              latitude={location.latitude}
+              longitude={location.longitude}
+              onChange={(lat, lng) => {
+                const nLat = parseFloat(lat);
+                const nLng = parseFloat(lng);
+                if (!isNaN(nLat) && !isNaN(nLng)) {
+                  setLocation({
+                    status: "ready",
+                    latitude: nLat,
+                    longitude: nLng,
+                  });
+                } else {
+                  setLocation({
+                    status: "manual",
+                    latitude: lat,
+                    longitude: lng,
+                    hint: "Select a point on the map to continue",
+                  });
+                }
+              }}
+            />
           </div>
         ) : null}
 

@@ -34,7 +34,15 @@ function LoginForm() {
       const dest = postLoginPath(user.role, params.get("next"));
       hardNavigate(dest);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Login failed");
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setError(err.message || "Invalid email or password. Please check your credentials.");
+        } else {
+          setError(err.message || `Login failed (${err.status})`);
+        }
+      } else {
+        setError("Network error. Please check your connection.");
+      }
       setBusy(false);
     }
   }

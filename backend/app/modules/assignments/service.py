@@ -142,9 +142,15 @@ class AssignmentService:
                     "capability_match": c.capability_match,
                     "load": c.load,
                     "score": round(c.score, 4),
-                    "recommendation_reason": c.recommendation_reason,
+                    "recommendation_reason": build_reason(
+                        name=c.name,
+                        distance_meters=c.distance_meters,
+                        capability_match=c.capability_match,
+                        category=category,
+                        is_primary=(idx == 0),
+                    ),
                 }
-                for c in top
+                for idx, c in enumerate(top)
             ],
             "empty_reason": None,
         }
