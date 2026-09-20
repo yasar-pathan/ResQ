@@ -63,6 +63,7 @@ function ResourcesPageInner() {
   const [type, setType] = useState<(typeof RESOURCE_TYPES)[number]>("team");
   const [lat, setLat] = useState("12.9716");
   const [lng, setLng] = useState("77.5946");
+  const [creating, setCreating] = useState(false);
 
   const patchParams = useCallback(
     (mutate: (qs: URLSearchParams) => void) => {
@@ -116,6 +117,7 @@ function ResourcesPageInner() {
     const token = getToken();
     if (!token || !isAdmin) return;
     setMessage(null);
+    setCreating(true);
     try {
       await createResource(token, {
         type,
@@ -131,6 +133,8 @@ function ResourcesPageInner() {
       const msg = err instanceof ApiError ? err.message : "Create failed";
       setError(msg);
       toast({ title: "Create failed", description: msg, variant: "error" });
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -277,7 +281,7 @@ function ResourcesPageInner() {
                   required
                 />
               </div>
-              <Button type="submit" size="sm">
+              <Button type="submit" size="sm" loading={creating}>
                 Create
               </Button>
             </form>

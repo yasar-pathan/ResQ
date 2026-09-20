@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MapPin } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StatusPill } from "@/components/domain/StatusPill";
 import { ClassificationReviewBadge } from "@/components/domain/ClassificationReviewBadge";
-import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
 import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { Switch } from "@/components/ui/Switch";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,6 +85,7 @@ function DashboardInner() {
   const [wsState, setWsState] = useState<"connecting" | "live" | "degraded">("connecting");
   const [showIncidents, setShowIncidents] = useState(true);
   const [showResources, setShowResources] = useState(true);
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   const patchParams = useCallback(
     (mutate: (qs: URLSearchParams) => void) => {
@@ -380,19 +380,46 @@ function DashboardInner() {
                     </button>
                     {/* Right: Map + Open with Tooltips — same row, right-aligned */}
                     <div className="queue-row-actions">
-                      <Tooltip tip="View coordinates on map">
-                        <span>
-                          <LocationMapDialog
-                            latitude={inc.location.latitude}
-                            longitude={inc.location.longitude}
-                            label={inc.tracking_ref}
-                          />
-                        </span>
+                      <Tooltip tip="View on situation map">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedId(inc.id);
+                            const mapEl = document.querySelector(".map-panel");
+                            if (window.innerWidth < 1024 && mapEl) {
+                              mapEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }
+                          }}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-control border transition-colors ${
+                            selectedId === inc.id
+                              ? "border-primary bg-primary/15 text-primary shadow-sm"
+                              : "border-border bg-surface text-slate-700 hover:bg-slate-100 hover:text-primary"
+                          }`}
+                          aria-label={`View ${inc.tracking_ref} on situation map`}
+                        >
+                          <MapPin className="h-4 w-4" strokeWidth={2} />
+                        </button>
                       </Tooltip>
                       <Tooltip tip="Open triage &amp; resource assignment">
-                        <Link href={`/incidents/${inc.id}`} className="btn btn-primary btn-sm">
-                          Open
-                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpeningId(inc.id);
+                            router.push(`/incidents/${inc.id}`);
+                          }}
+                          disabled={openingId === inc.id}
+                          className="btn btn-primary btn-sm inline-flex items-center gap-1.5"
+                        >
+                          {openingId === inc.id ? (
+                            <>
+                              <Spinner size="sm" />
+                              <span>Opening…</span>
+                            </>
+                          ) : (
+                            <span>Open</span>
+                          )}
+                        </button>
                       </Tooltip>
                     </div>
                   </li>
@@ -462,19 +489,25 @@ function DashboardInner() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Tooltip tip="View incident coordinates on map">
-                    <span>
-                      <LocationMapDialog
-                        latitude={selected.location.latitude}
-                        longitude={selected.location.longitude}
-                        label={selected.tracking_ref}
-                      />
-                    </span>
-                  </Tooltip>
                   <Tooltip tip="Open full triage and resource assignment">
-                    <Link href={`/incidents/${selected.id}`} className="btn btn-primary btn-sm">
-                      Triage &amp; assign
-                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpeningId(selected.id);
+                        router.push(`/incidents/${selected.id}`);
+                      }}
+                      disabled={openingId === selected.id}
+                      className="btn btn-primary btn-sm inline-flex items-center gap-1.5"
+                    >
+                      {openingId === selected.id ? (
+                        <>
+                          <Spinner size="sm" />
+                          <span>Opening…</span>
+                        </>
+                      ) : (
+                        <span>Triage &amp; assign</span>
+                      )}
+                    </button>
                   </Tooltip>
                 </div>
               </div>

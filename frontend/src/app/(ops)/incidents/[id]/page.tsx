@@ -7,6 +7,7 @@ import { ChevronDown } from "lucide-react";
 import { StatusPill } from "@/components/domain/StatusPill";
 import { ClassificationReviewBadge } from "@/components/domain/ClassificationReviewBadge";
 import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
+import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ export default function IncidentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const token = getToken();
@@ -67,6 +69,7 @@ export default function IncidentDetailPage() {
     const token = getToken();
     if (!token || !id) return;
     setBusy(true);
+    setAssigningId(resourceId);
     setMessage(null);
     try {
       await assignResource(token, id, {
@@ -80,6 +83,7 @@ export default function IncidentDetailPage() {
       setError(err instanceof ApiError ? err.message : "Assign failed");
     } finally {
       setBusy(false);
+      setAssigningId(null);
     }
   }
 
@@ -148,9 +152,9 @@ export default function IncidentDetailPage() {
               </p>
             </div>
             <div className="rec-actions">
-              <button
-                type="button"
-                className="btn btn-primary"
+              <Button
+                variant="primary"
+                loading={busy && assigningId === rec.resource_id}
                 disabled={busy}
                 onClick={() =>
                   void onAssign(
@@ -162,7 +166,7 @@ export default function IncidentDetailPage() {
                 }
               >
                 {idx === 0 ? "Accept AI" : "Assign (override)"}
-              </button>
+              </Button>
             </div>
           </article>
         ))}
@@ -201,9 +205,9 @@ export default function IncidentDetailPage() {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            type="button"
-            className="btn btn-secondary"
+          <Button
+            variant="secondary"
+            loading={busy && assigningId === manualId}
             disabled={busy || !manualId}
             onClick={() => {
               const r = resources.find((x) => x.id === manualId);
@@ -211,7 +215,7 @@ export default function IncidentDetailPage() {
             }}
           >
             Assign manually
-          </button>
+          </Button>
         </div>
       </section>
 

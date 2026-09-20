@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,7 @@ export default function UsersSettingsPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("dispatcher");
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const token = getToken();
@@ -49,6 +51,7 @@ export default function UsersSettingsPage() {
     const token = getToken();
     if (!token) return;
     setMessage(null);
+    setBusy(true);
     try {
       const res = await fetch(`${getApiBaseUrl()}/auth/register`, {
         method: "POST",
@@ -70,6 +73,8 @@ export default function UsersSettingsPage() {
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Create failed");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -120,9 +125,9 @@ export default function UsersSettingsPage() {
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <button className="btn btn-primary" type="submit">
+        <Button type="submit" loading={busy}>
           Create user
-        </button>
+        </Button>
       </form>
       <ul className="field-list">
         {users.map((u) => (

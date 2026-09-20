@@ -280,3 +280,16 @@ Heavy dispatcher map/queue workflows remain desktop-preferred. Operator install 
   - **Linter Rule Alignment**: Explicitly declared `select = ["E4", "E7", "E9", "F"]` in `backend/pyproject.toml` to guarantee 100% deterministic linting across local environments, Docker, and GitHub Actions `ci.yml`.
   - **Test Suite Race Condition & Deadlock Fix**: Resolved PostgreSQL `DeadlockDetectedError` in `tests/test_classification_worker.py`. When running integration tests against a live stack with an active background worker container (`rescuegrid-worker`), setting test queue items to `QueueStatus.processing` prevents the background worker from claiming the test rows, eliminating lock contention while `ClassificationService.process_queue_item()` executes.
   - **Docker-Native Build & Verification**: Rebuilt `api` and `worker` images, verified all 80 backend tests pass (`80 passed, 0 failed`), and verified frontend passes linting and unit tests in Docker.
+
+### 10.7 Map Button Redundancy Resolution & Shadcn Spinner Loading Implementation
+- **Queue Item Map Selection without Modal Popup**:
+  - Replaced `<LocationMapDialog>` on queue items with direct map selection (`MapPin` button).
+  - Clicking the queue item's map button sets `selectedId = inc.id`, centering and highlighting the incident on `OpsMapDynamic` in the adjacent situation map container and smoothly scrolling on mobile viewports.
+  - Eliminated the redundant modal popup dialog on the dashboard.
+- **Removed Redundant Map Button in Map Container**:
+  - Removed `<LocationMapDialog>` from the adjacent map drawer (`map-drawer`), keeping only the primary action button (`Triage & assign`).
+- **Shadcn Spinner Component & Universal Loading Feedback**:
+  - Created [`Spinner.tsx`](file:///c:/Users/hp/Desktop/ResQ/frontend/src/components/ui/Spinner.tsx) primitive using `lucide-react`'s `Loader2` with `animate-spin` and accessible `role="status"` and `aria-label="Loading"`.
+  - Enhanced [`Button.tsx`](file:///c:/Users/hp/Desktop/ResQ/frontend/src/components/ui/Button.tsx) with a `loading?: boolean` property, disabling user interaction and automatically rendering the Spinner alongside button content.
+  - Added interactive loading states with `<Spinner />` when clicking "Open" on queue items, "Triage & assign" in the situation map drawer, "Create" in `/resources`, "Create user" in `/settings/users`, "Log Call Incident" in `/incidents/log`, "Accept AI" / "Assign manually" in `/incidents/[id]`, "Sign in" in `/login`, and "Create account" in `/register`.
+

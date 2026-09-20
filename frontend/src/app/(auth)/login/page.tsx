@@ -79,7 +79,7 @@ function LoginForm() {
             />
           </div>
           {error ? <p className="form-error">{error}</p> : null}
-          <Button className="btn-primary" type="submit" disabled={busy}>
+          <Button className="btn-primary" type="submit" loading={busy}>
             {busy ? "Signing in…" : "Sign in"}
           </Button>
         </form>

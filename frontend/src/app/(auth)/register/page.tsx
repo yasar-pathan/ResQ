@@ -94,7 +94,7 @@ export default function RegisterPage() {
             />
           </div>
           {error ? <p className="form-error">{error}</p> : null}
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" loading={busy}>
             {busy ? "Creating…" : "Create account"}
           </Button>
         </form>

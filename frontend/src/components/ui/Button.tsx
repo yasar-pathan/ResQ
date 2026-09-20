@@ -1,4 +1,5 @@
 import { type ButtonHTMLAttributes, forwardRef } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 
 type Variant = "primary" | "secondary" | "ghost" | "sos" | "danger";
 type Size = "default" | "sm" | "lg" | "icon";
@@ -21,17 +22,40 @@ const sizeClass: Record<Size, string> = {
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
   size?: Size;
+  loading?: boolean;
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  function Button({ className = "", variant = "primary", size = "default", type = "button", ...props }, ref) {
+  function Button(
+    {
+      className = "",
+      variant = "primary",
+      size = "default",
+      type = "button",
+      loading = false,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) {
     return (
       <button
         ref={ref}
         type={type}
+        disabled={disabled || loading}
+        aria-busy={loading}
         className={[variantClass[variant], sizeClass[size], className].filter(Boolean).join(" ")}
         {...props}
-      />
+      >
+        {loading ? (
+          <Spinner
+            size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
+            className={children ? "mr-1.5" : ""}
+          />
+        ) : null}
+        {children}
+      </button>
     );
   },
 );

@@ -467,17 +467,12 @@ export default function LogCallPage() {
               </button>
               <Button
                 type="submit"
+                loading={submitting}
                 disabled={submitting || !isDescValid}
                 className="inline-flex items-center gap-2"
               >
-                {submitting ? (
-                  "Logging call…"
-                ) : (
-                  <>
-                    <Send className="h-3.5 w-3.5" />
-                    Log Call Incident
-                  </>
-                )}
+                {!submitting && <Send className="h-3.5 w-3.5" />}
+                {submitting ? "Logging call…" : "Log Call Incident"}
               </Button>
             </div>
           </div>

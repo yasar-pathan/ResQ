@@ -197,7 +197,7 @@ export default function FieldReportPage() {
 
         {formError ? <p className="form-error">{formError}</p> : null}
 
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" loading={submitting}>
           {submitting ? "Submitting…" : "Submit field report"}
         </Button>
       </form>
