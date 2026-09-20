@@ -4,6 +4,7 @@ import L from "leaflet";
 import { useState } from "react";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { BENGALURU_CENTER, INDIA_MAP_PROPS } from "@/lib/maps/india";
 
 const pin = L.divIcon({
   className: "",
@@ -31,13 +32,19 @@ export default function LocationPickerMap({
   onPick: (lat: number, lng: number) => void;
 }) {
   const [center] = useState<[number, number]>(() =>
-    latitude != null && longitude != null ? [latitude, longitude] : [20.5937, 78.9629],
+    latitude != null && longitude != null ? [latitude, longitude] : BENGALURU_CENTER,
   );
   const url =
     process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   return (
-    <MapContainer center={center} zoom={13} style={{ height: 280, width: "100%" }} scrollWheelZoom>
+    <MapContainer
+      center={center}
+      zoom={13}
+      style={{ height: 280, width: "100%" }}
+      scrollWheelZoom
+      {...INDIA_MAP_PROPS}
+    >
       <TileLayer attribution="&copy; OSM" url={url} />
       <ClickHandler onPick={onPick} />
       {latitude != null && longitude != null ? (

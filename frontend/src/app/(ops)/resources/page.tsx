@@ -6,6 +6,11 @@ import { Ambulance, Building2, MapPin, Users, Wrench, type LucideIcon } from "lu
 import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
 import { resourceStatusColor } from "@/components/maps/mapStyles";
 import { Button } from "@/components/ui/Button";
+import { HoverCard } from "@/components/ui/HoverCard";
+import { ScrollArea } from "@/components/ui/ScrollArea";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { useToast } from "@/components/ui/Toast";
 import {
   ApiError,
   createResource,
@@ -36,6 +41,7 @@ function TypeIcon({ type }: { type: string }) {
 
 function ResourcesPageInner() {
   const { getToken, refreshSession, user } = useAuth();
+  const { toast } = useToast();
   const isAdmin = user?.role === "admin";
   const router = useRouter();
   const pathname = usePathname();
@@ -45,6 +51,7 @@ function ResourcesPageInner() {
   const [items, setItems] = useState<ResourceItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [type, setType] = useState<(typeof RESOURCE_TYPES)[number]>("team");
   const [lat, setLat] = useState("12.9716");
@@ -74,6 +81,7 @@ function ResourcesPageInner() {
   };
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await withAuthRetry(getToken, refreshSession, (token) =>
         listResources(token, {
@@ -84,9 +92,13 @@ function ResourcesPageInner() {
       setItems(data.items);
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load resources");
+      const msg = err instanceof ApiError ? err.message : "Failed to load resources";
+      setError(msg);
+      toast({ title: "Failed to load resources", description: msg, variant: "error" });
+    } finally {
+      setLoading(false);
     }
-  }, [getToken, refreshSession, statusFilter]);
+  }, [getToken, refreshSession, statusFilter, toast]);
 
   useEffect(() => {
     void load();
@@ -103,11 +115,15 @@ function ResourcesPageInner() {
         name,
         location: { latitude: Number(lat), longitude: Number(lng) },
       });
-      setMessage(`Created ${name}`);
+      const msg = `Created ${name}`;
+      setMessage(msg);
+      toast({ title: "Resource added", description: msg, variant: "success" });
       setName("");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Create failed");
+      const msg = err instanceof ApiError ? err.message : "Create failed";
+      setError(msg);
+      toast({ title: "Create failed", description: msg, variant: "error" });
     }
   }
 
@@ -117,9 +133,16 @@ function ResourcesPageInner() {
     try {
       await updateResource(token, id, { is_active: false });
       setMessage("Resource deactivated");
+      toast({
+        title: "Resource deactivated",
+        description: "Unit marked inactive.",
+        variant: "info",
+      });
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Update failed");
+      const msg = err instanceof ApiError ? err.message : "Update failed";
+      setError(msg);
+      toast({ title: "Update failed", description: msg, variant: "error" });
     }
   }
 
@@ -182,7 +205,10 @@ function ResourcesPageInner() {
 
         <section className="flex min-h-0 flex-col gap-3 overflow-hidden">
           {isAdmin ? (
-            <form className="stack shrink-0 gap-2 rounded-panel border border-border bg-surface p-3" onSubmit={onCreate}>
+            <form
+              className="stack shrink-0 gap-2 rounded-panel border border-border bg-surface p-3"
+              onSubmit={onCreate}
+            >
               <h2 className="text-sm font-bold">Add resource</h2>
               <input
                 className="field"
@@ -224,53 +250,110 @@ function ResourcesPageInner() {
             </form>
           ) : null}
 
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-panel border border-border bg-surface">
-            <ul className="divide-y divide-border">
-              {items.length === 0 ? (
-                <li className="p-4 text-sm text-muted">No resources match this filter.</li>
-              ) : (
-                items.map((r) => (
-                  <li
-                    key={r.id}
-                    className={`flex items-start gap-2 p-3 ${selectedId === r.id ? "bg-slate-50" : ""}`}
-                  >
-                    <span
-                      className="mt-1.5 inline-block h-3 w-3 shrink-0 rounded-sm"
-                      style={{ background: resourceStatusColor(r) }}
-                      aria-hidden
-                    />
-                    <span className="mt-1 inline-flex shrink-0 text-slate-600" title={r.type}>
-                      <TypeIcon type={r.type} />
-                    </span>
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left"
-                      onClick={() => selectResource(r.id)}
+          <ScrollArea
+            className="min-h-0 flex-1 rounded-panel border border-border bg-surface"
+            withFade
+          >
+            {loading ? (
+              <div className="space-y-3 p-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
+                    <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-8 w-8 shrink-0 rounded-control" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {!loading && (
+              <ul className="divide-y divide-border">
+                {items.length === 0 ? (
+                  <li className="p-4 text-sm text-muted">No resources match this filter.</li>
+                ) : (
+                  items.map((r) => (
+                    <li
+                      key={r.id}
+                      className={`flex items-start gap-2 p-3 ${
+                        selectedId === r.id ? "bg-slate-50" : ""
+                      }`}
                     >
-                      <p className="font-semibold">{r.name}</p>
-                      <p className="text-xs capitalize text-muted">
-                        {r.type} · {statusLabel(r)}
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-slate-700 transition-colors hover:bg-slate-100"
-                      aria-label={`Show ${r.name} on map`}
-                      title="Show on map"
-                      onClick={() => selectResource(r.id)}
-                    >
-                      <MapPin className="h-5 w-5" strokeWidth={1.75} />
-                    </button>
-                    {isAdmin ? (
-                      <Button type="button" variant="secondary" size="sm" onClick={() => void onDeactivate(r.id)}>
-                        Deactivate
-                      </Button>
-                    ) : null}
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
+                      <span
+                        className="mt-1.5 inline-block h-3 w-3 shrink-0 rounded-sm"
+                        style={{ background: resourceStatusColor(r) }}
+                        aria-hidden
+                      />
+                      <span className="mt-1 inline-flex shrink-0 text-slate-600" title={r.type}>
+                        <TypeIcon type={r.type} />
+                      </span>
+                      <HoverCard
+                        trigger={
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left"
+                            onClick={() => selectResource(r.id)}
+                          >
+                            <p className="font-semibold">{r.name}</p>
+                            <p className="text-xs capitalize text-muted">
+                              {r.type} · {statusLabel(r)}
+                            </p>
+                          </button>
+                        }
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold">{r.name}</span>
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase text-white"
+                              style={{ background: resourceStatusColor(r) }}
+                            >
+                              {statusLabel(r)}
+                            </span>
+                          </div>
+                          <p className="text-xs capitalize text-muted">
+                            <strong>Type:</strong> {r.type}
+                          </p>
+                          <p className="text-xs text-muted">
+                            <strong>Location:</strong> {r.location.latitude.toFixed(4)},{" "}
+                            {r.location.longitude.toFixed(4)}
+                          </p>
+                          <p className="text-xs text-muted">
+                            <strong>Active:</strong> {r.is_active ? "Yes" : "No"}
+                          </p>
+                        </div>
+                      </HoverCard>
+                      <Tooltip tip={`Show ${r.name} on map`}>
+                        <button
+                          type="button"
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-slate-700 transition-colors hover:bg-slate-100"
+                          aria-label={`Show ${r.name} on map`}
+                          onClick={() => selectResource(r.id)}
+                        >
+                          <MapPin className="h-5 w-5" strokeWidth={1.75} />
+                        </button>
+                      </Tooltip>
+                      {isAdmin ? (
+                        <Tooltip tip="Deactivate this resource from service">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void onDeactivate(r.id)}
+                          >
+                            Deactivate
+                          </Button>
+                        </Tooltip>
+                      ) : null}
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </ScrollArea>
         </section>
       </div>
     </div>

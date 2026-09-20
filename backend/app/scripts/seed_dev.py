@@ -1,4 +1,4 @@
-"""Idempotent development seed data — India-oriented demo incidents, resources, alerts."""
+"""Idempotent development seed — Bengaluru-only demo (India map scope)."""
 
 import asyncio
 
@@ -29,8 +29,14 @@ from app.models.resource import Resource
 from app.models.trusted_contact import TrustedContact
 from app.models.user import User, UserRole
 
-# Bump marker when seed shape changes so existing DBs pick up a fresh demo set.
-SEED_MARKER_TRACKING = "SEED00000002"
+SEED_MARKER_TRACKING = "SEED00000003"
+
+# Bengaluru metro — all demo coordinates stay in-city for India-focused maps.
+BLR = (12.9716, 77.5946)
+BLR_EAST = (12.9750, 77.6060)
+BLR_SOUTH = (12.9352, 77.6245)
+BLR_NORTH = (12.9980, 77.5920)
+BLR_WEST = (12.9698, 77.5710)
 
 
 async def seed() -> None:
@@ -78,51 +84,50 @@ async def seed() -> None:
             select(Incident).where(Incident.tracking_ref == SEED_MARKER_TRACKING)
         )
         if existing.scalar_one_or_none():
-            print("Seed incidents already present (SEED00000002); ops users ensured.")
+            print(f"Seed incidents already present ({SEED_MARKER_TRACKING}); ops users ensured.")
             return
 
-        # Same-city resources for coherent dispatch demos
         blr_team = Resource(
             type=ResourceType.team,
             name="Bengaluru Fire Team Alpha",
-            location=point_wkt(12.9716, 77.5946),
+            location=point_wkt(*BLR),
             capabilities={"handles": ["fire", "medical"]},
             status=ResourceStatus.available,
             operator_user_id=field_op.id,
         )
-        mum_ambulance = Resource(
+        blr_ambulance = Resource(
             type=ResourceType.vehicle,
-            name="Mumbai Ambulance 3",
-            location=point_wkt(19.0760, 72.8777),
+            name="Bengaluru Ambulance 3",
+            location=point_wkt(*BLR_EAST),
             capabilities={"handles": ["medical"]},
             status=ResourceStatus.assigned,
             operator_user_id=field_op.id,
         )
-        chn_facility = Resource(
+        blr_facility = Resource(
             type=ResourceType.facility,
-            name="Chennai Command Post",
-            location=point_wkt(13.0827, 80.2707),
+            name="Bengaluru Command Post",
+            location=point_wkt(*BLR_NORTH),
             capabilities={"handles": ["flood", "medical"]},
             status=ResourceStatus.available,
             operator_user_id=None,
         )
-        del_equipment = Resource(
+        blr_equipment = Resource(
             type=ResourceType.equipment,
-            name="Delhi Pump Unit",
-            location=point_wkt(28.6139, 77.2090),
+            name="Bengaluru Pump Unit",
+            location=point_wkt(*BLR_WEST),
             capabilities={"handles": ["fire", "flood"]},
             status=ResourceStatus.available,
             operator_user_id=None,
         )
-        hyd_team = Resource(
+        blr_medical = Resource(
             type=ResourceType.team,
-            name="Hyderabad Medical Squad",
-            location=point_wkt(17.3850, 78.4867),
+            name="Bengaluru Medical Squad",
+            location=point_wkt(*BLR_SOUTH),
             capabilities={"handles": ["medical"]},
             status=ResourceStatus.available,
             operator_user_id=field_op.id,
         )
-        resources = [blr_team, mum_ambulance, chn_facility, del_equipment, hyd_team]
+        resources = [blr_team, blr_ambulance, blr_facility, blr_equipment, blr_medical]
         for r in resources:
             session.add(r)
         await session.flush()
@@ -130,88 +135,69 @@ async def seed() -> None:
         blr_fire = Incident(
             tracking_ref=SEED_MARKER_TRACKING,
             category=IncidentCategory.fire,
-            description="Seed: warehouse smoke reported (Bengaluru)",
-            location=point_wkt(12.9716, 77.5946),
+            description="Seed: warehouse smoke reported (Bengaluru CBD)",
+            location=point_wkt(*BLR),
             source=IncidentSource.citizen_web,
             status=IncidentStatus.assigned,
             priority=IncidentPriority.critical,
             reporter_id=admin_user.id,
         )
-        mum_ps = Incident(
+        blr_ps = Incident(
             tracking_ref=generate_tracking_ref(),
             category=IncidentCategory.personal_safety,
-            description="Seed: personal safety report (Mumbai)",
-            location=point_wkt(19.0760, 72.8777),
+            description="Seed: personal safety report (Bengaluru)",
+            location=point_wkt(*BLR_EAST),
             source=IncidentSource.sos,
             is_anonymous=True,
             status=IncidentStatus.in_progress,
             priority=IncidentPriority.high,
         )
-        chn_flood = Incident(
+        blr_flood = Incident(
             tracking_ref=generate_tracking_ref(),
             category=IncidentCategory.flood,
-            description="Seed: sensor flood detection (Chennai)",
-            location=point_wkt(13.0827, 80.2707),
+            description="Seed: sensor flood detection (Bengaluru north)",
+            location=point_wkt(*BLR_NORTH),
             source=IncidentSource.sensor,
             status=IncidentStatus.classified,
             priority=IncidentPriority.medium,
         )
-        del_fire = Incident(
+        blr_fire2 = Incident(
             tracking_ref=generate_tracking_ref(),
             category=IncidentCategory.fire,
-            description="Seed: industrial fire response (Delhi)",
-            location=point_wkt(28.6139, 77.2090),
+            description="Seed: industrial fire response (Bengaluru west)",
+            location=point_wkt(*BLR_WEST),
             source=IncidentSource.citizen_web,
             status=IncidentStatus.classified,
             priority=IncidentPriority.critical,
         )
-        hyd_medical = Incident(
+        blr_medical_inc = Incident(
             tracking_ref=generate_tracking_ref(),
             category=IncidentCategory.medical,
-            description="Seed: medical assist (Hyderabad)",
-            location=point_wkt(17.3850, 78.4867),
+            description="Seed: medical assist (Bengaluru south)",
+            location=point_wkt(*BLR_SOUTH),
             source=IncidentSource.citizen_web,
             status=IncidentStatus.reported,
             priority=IncidentPriority.high,
         )
-        kol_flood = Incident(
-            tracking_ref=generate_tracking_ref(),
-            category=IncidentCategory.flood,
-            description="Seed: flood watch (Kolkata)",
-            location=point_wkt(22.5726, 88.3639),
-            source=IncidentSource.sensor,
-            status=IncidentStatus.classified,
-            priority=IncidentPriority.medium,
-        )
-        # Extra points for hotspot buckets near major cities
         blr_road = Incident(
             tracking_ref=generate_tracking_ref(),
             category=IncidentCategory.road_incident,
             description="Seed: road collision near MG Road (Bengaluru)",
-            location=point_wkt(12.9750, 77.6060),
+            location=point_wkt(*BLR_EAST),
             source=IncidentSource.citizen_web,
-            status=IncidentStatus.reported,
+            status=IncidentStatus.classified,
             priority=IncidentPriority.medium,
         )
-        mum_medical = Incident(
+        blr_call = Incident(
             tracking_ref=generate_tracking_ref(),
             category=IncidentCategory.medical,
-            description="Seed: medical standby (Mumbai Bandra)",
-            location=point_wkt(19.0596, 72.8295),
+            description="Seed: dispatcher logged call (Bengaluru)",
+            location=point_wkt(*BLR),
             source=IncidentSource.call,
             status=IncidentStatus.reported,
             priority=IncidentPriority.low,
         )
-        incidents = [
-            blr_fire,
-            mum_ps,
-            chn_flood,
-            del_fire,
-            hyd_medical,
-            kol_flood,
-            blr_road,
-            mum_medical,
-        ]
+        incidents = [blr_fire, blr_ps, blr_flood, blr_fire2, blr_medical_inc, blr_road, blr_call]
         for inc in incidents:
             session.add(inc)
         await session.flush()
@@ -223,13 +209,12 @@ async def seed() -> None:
         )
         session.add(
             TrustedContact(
-                incident_id=mum_ps.id,
-                name="Trusted Contact Mumbai",
+                incident_id=blr_ps.id,
+                name="Trusted Contact",
                 contact="+919876543210",
             )
         )
 
-        # Same-city assignments
         session.add(
             Assignment(
                 incident_id=blr_fire.id,
@@ -243,8 +228,8 @@ async def seed() -> None:
         )
         session.add(
             Assignment(
-                incident_id=mum_ps.id,
-                resource_id=mum_ambulance.id,
+                incident_id=blr_ps.id,
+                resource_id=blr_ambulance.id,
                 assigned_by_user_id=dispatcher.id,
                 assignee_user_id=field_op.id,
                 ai_recommended=True,
@@ -254,8 +239,8 @@ async def seed() -> None:
         )
         session.add(
             Assignment(
-                incident_id=chn_flood.id,
-                resource_id=chn_facility.id,
+                incident_id=blr_flood.id,
+                resource_id=blr_facility.id,
                 assigned_by_user_id=admin_user.id,
                 ai_recommended=True,
                 decision=AssignmentDecision.accepted_ai,
@@ -263,7 +248,6 @@ async def seed() -> None:
             )
         )
 
-        # Active alerts with locations via incident join
         session.add(
             Alert(
                 incident_id=blr_fire.id,
@@ -274,31 +258,31 @@ async def seed() -> None:
         )
         session.add(
             Alert(
-                incident_id=del_fire.id,
+                incident_id=blr_fire2.id,
                 type=AlertType.critical_incident,
-                message="Critical industrial fire in Delhi — escalate if unassigned.",
+                message="Critical industrial fire in Bengaluru — escalate if unassigned.",
                 status=AlertStatus.active,
             )
         )
         session.add(
             Alert(
-                incident_id=hyd_medical.id,
+                incident_id=blr_medical_inc.id,
                 type=AlertType.delayed_response,
-                message="Hyderabad medical assist still reported — response delayed.",
+                message="Bengaluru medical assist still reported — response delayed.",
                 status=AlertStatus.active,
             )
         )
         session.add(
             Alert(
-                incident_id=chn_flood.id,
+                incident_id=blr_flood.id,
                 type=AlertType.escalation_required,
-                message="Chennai flood watch may need escalation for resources.",
+                message="Bengaluru flood watch may need escalation for resources.",
                 status=AlertStatus.active,
             )
         )
 
         await session.commit()
-        print("Seed data created successfully (SEED00000002 — India demo + alerts).")
+        print(f"Seed data created successfully ({SEED_MARKER_TRACKING} — Bengaluru demo + alerts).")
 
 
 async def _run() -> None:

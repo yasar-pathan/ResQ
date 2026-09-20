@@ -6,11 +6,13 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { IncidentListItem, ResourceItem } from "@/lib/api/client";
 import { priorityColor, resourceStatusColor } from "@/components/maps/mapStyles";
-
-/** India geographic center — empty ops maps frame the country first. */
-const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629];
-const DEFAULT_ZOOM = 5;
-const FOCUS_ZOOM = 15;
+import {
+  INDIA_CENTER,
+  INDIA_DEFAULT_ZOOM,
+  INDIA_FOCUS_ZOOM,
+  INDIA_MAP_PROPS,
+  isInIndia,
+} from "@/lib/maps/india";
 
 function tileUrl(): string {
   return process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -49,17 +51,17 @@ export function FitBounds({
     if (selectedId) {
       const sel = points.find((p) => p.id === selectedId);
       if (sel) {
-        const targetZoom = Math.max(map.getZoom(), FOCUS_ZOOM);
+        const targetZoom = Math.max(map.getZoom(), INDIA_FOCUS_ZOOM);
         map.flyTo([sel.lat, sel.lng], targetZoom, { duration: 1.1, easeLinearity: 0.25 });
         return;
       }
     }
     if (points.length === 0) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+      map.setView(INDIA_CENTER, INDIA_DEFAULT_ZOOM);
       return;
     }
     if (points.length === 1) {
-      map.setView([points[0].lat, points[0].lng], 14);
+      map.setView([points[0].lat, points[0].lng], INDIA_FOCUS_ZOOM);
       return;
     }
     const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
@@ -95,12 +97,14 @@ export function OpsMap({
     const list: Array<{ id: string; lat: number; lng: number }> = [];
     if (showIncidents) {
       for (const inc of incidents) {
-        list.push({ id: inc.id, lat: inc.location.latitude, lng: inc.location.longitude });
+        const { latitude: lat, longitude: lng } = inc.location;
+        if (isInIndia(lat, lng)) list.push({ id: inc.id, lat, lng });
       }
     }
     if (showResources) {
       for (const r of resources) {
-        list.push({ id: r.id, lat: r.location.latitude, lng: r.location.longitude });
+        const { latitude: lat, longitude: lng } = r.location;
+        if (isInIndia(lat, lng)) list.push({ id: r.id, lat, lng });
       }
     }
     return list;
@@ -109,15 +113,18 @@ export function OpsMap({
   return (
     <div className={`ops-leaflet-map overflow-hidden rounded-panel border border-border ${className}`} style={{ height, minHeight: 280 }}>
       <MapContainer
-        center={DEFAULT_CENTER}
-        zoom={DEFAULT_ZOOM}
+        center={INDIA_CENTER}
+        zoom={INDIA_DEFAULT_ZOOM}
         scrollWheelZoom
+        {...INDIA_MAP_PROPS}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url={tileUrl()} />
         <FitBounds points={points} selectedId={selectedId} />
         {showIncidents
-          ? incidents.map((inc) => (
+          ? incidents
+              .filter((inc) => isInIndia(inc.location.latitude, inc.location.longitude))
+              .map((inc) => (
               <Marker
                 key={inc.id}
                 position={[inc.location.latitude, inc.location.longitude]}
@@ -135,7 +142,9 @@ export function OpsMap({
             ))
           : null}
         {showResources
-          ? resources.map((r) => (
+          ? resources
+              .filter((r) => isInIndia(r.location.latitude, r.location.longitude))
+              .map((r) => (
               <Marker
                 key={r.id}
                 position={[r.location.latitude, r.location.longitude]}

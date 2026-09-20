@@ -65,7 +65,7 @@ docker compose run --rm migrate          # alembic upgrade head
 docker compose run --rm api python -m app.scripts.seed_dev
 ```
 
-Seed marker: **`SEED00000002`** — India same-city demo incidents, assignments, and linked alerts. Re-run after wiping DB volumes.
+Seed marker: **`SEED00000003`** — Bengaluru metro demo incidents, assignments, and linked alerts (India-only map framing). Re-run after wiping DB volumes.
 
 Single-head check (also in CI):
 
@@ -110,12 +110,57 @@ docker compose run --rm api alembic current
 | SOS | Square CTA + pulse (respects `prefers-reduced-motion`) |
 | Analytics | Recharts pie/bar charts with token-safe load; `HotspotsMap` + `invalidateSize` after layout |
 | Alerts | Map pin always shown when location exists; disabled state when missing |
-| Seed | `SEED00000002` India demo: same-city assignments + linked alerts |
+| Seed | `SEED00000003` Bengaluru metro demo; maps clamped to India bounds |
 | Docker/frontend | Named volume `frontend_next` → `/app/.next`; Dockerfile clears `.next` on start; wipe volume if CSS/JS 404 |
 | Audit / traceability | `docs/05_TRACEABILITY_MATRIX.md` Part 2 — F-01–F-14 matrix, 80 pytest in CI |
 | F-03 log-call | Ops `/incidents/log` (authenticated `source=call`); sensor demo `python -m app.scripts.simulate_sensor_intake` |
-| F-04 review | `ai_confidence` in API; ops “Review classification” badge when &lt; 0.5 |
+| F-04 review | `ai_confidence` in API; ops “Review AI” badge when &lt; 0.5 |
 | OpenAI dedup | Optional embedding similarity blended into dedup score (`max(SequenceMatcher, cosine)`) |
+
+### Phase 15 — Queue UX, F-03 intake completion, dashboard assignment snippet
+
+| Area | What shipped |
+|------|----------------|
+| Queue row layout | Single-row horizontal cards in dashboard queue: meta (priority/status/source chip/tracking_ref/category/assignment) left; Map dialog + Open right; `queue-row-actions` CSS class; `.dashboard-ops .queue-panel { padding: 0 }` isolates outer panel chrome |
+| Source chips | Color-coded `source-chip` CSS for `call` (blue), `sensor` (green), `field_team` (yellow), `citizen_web` (purple), `sos` (red); shown in both queue rows and map drawer selected panel |
+| Severity in map drawer | `severity` field shown in selected-incident drawer alongside source chip |
+| Log call CTA | **Log call** button (Phone icon) in live ops dashboard header — visible without opening sidebar; links to `/incidents/log` |
+| Log call polish | `withAuthRetry` on submit; idempotency key generated per submission; rich success state: tracking_ref, Open incident, Dashboard (deep-link `?selected={id}`), Log another call; caller notes mapped to `address_text`; source badge preview |
+| F-03 field-team report | New `/field/report` page (`source=field_team`); reuses `LocationPicker` + category/description; `withAuthRetry`; rich success state (View incident / My assignments / Report another) |
+| Field nav | `OperatorShell` field_team links array now includes **Report incident** (`FileWarning` icon → `/field/report`) alongside Assignments |
+| Backend list enrichment | `list_incidents` in `IncidentService` now bulk-fetches active assignments (proposed/confirmed/en_route/on_scene) per page and attaches `active_assignment: { resource_name, status }` to each serialized item |
+| IncidentListItem type | Frontend `client.ts` `IncidentListItem` extended with `active_assignment?: { resource_name, status } \| null` |
+| Docs | `MANUAL_TASKS.md` §10 F-03 multi-source walkthrough (call/sensor/field_team/citizen_web/SOS); source chip color table |
+
+### Phase 16 — Shadcn UI Modernization, Primitives & Micro-Interactions
+
+| Component / Area | What shipped |
+|---|---|
+| Radix UI integration | Installed `@radix-ui/react-scroll-area`, `@radix-ui/react-tooltip`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-hover-card`, `@radix-ui/react-collapsible`, `@radix-ui/react-toast`, `@radix-ui/react-separator`. |
+| Shimmer Skeleton (`Skeleton.tsx`) | CSS `@keyframes shimmer` animated gradient placeholder cards for loading states in Dashboard Queue, Alerts Center, and Resource Inventory. Replaces bare "Loading..." strings. |
+| ScrollArea + Scroll-Fade (`ScrollArea.tsx`) | Headless cross-browser scroll container with `withFade` prop applying smooth gradient fade to surface at the bottom of long lists (Dashboard Queue, Alerts Center, Resource Inventory). |
+| Toast System (`Toast.tsx` / `useToast`) | Global `<ToastProvider>` mounted at `OperatorShell` root with Radix toast primitives (Title, Description, Close, Viewport) and contextual variant styles (`success`, `error`, `info`). Dispatched across ops forms and action handlers. |
+| Tooltip (`Tooltip.tsx`) | Micro-interaction hints on icon-only and compact buttons across Dashboard header, Queue rows, Map drawers, Alert acknowledge controls, and Resource actions. |
+| HoverCard (`HoverCard.tsx`) | Interactive preview on resource names showing real-time unit status, operational category, precise coordinates, and availability state on hover without navigating away. |
+| Collapsible (`Collapsible.tsx`) | Type-grouped accordion sections in Alerts Center with rotating chevron indicators and count badges. |
+| Textarea (`Textarea.tsx`) | Accessible, resizable form input with design-token-compliant border and focus rings for Dispatcher call intake and Field-team report observation notes. |
+| Global CSS & Tailwind | Shimmer animation keyframe, `.skeleton` utility, scroll-fade gradient container, and Radix animation overrides in `globals.css` and `tailwind.config.js`. |
+
+### Phase 16.1 — UI Refinement & Shadcn Component Suite Expansion
+
+| Component / Area | What shipped |
+|---|---|
+| Inner Viewport Scroll-Fade | Moved scroll fade mask (`.scroll-fade-viewport`) directly into `ScrollAreaPrimitive.Viewport` via CSS `mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%)`. Content fades cleanly at the exact scrolling boundary without scrollbar occlusion or background mismatch. |
+| Dashboard Filter Dropdowns | Replaced native `<select>` dropdowns with Shadcn `DropdownMenu` + `DropdownMenuRadioGroup` / `DropdownMenuRadioItem` with check indicators for Category, Priority, and Status filters. |
+| Map Layer Toggles | Integrated Shadcn `<Switch>` (`@radix-ui/react-switch`) with smooth thumb sliding for Incidents and Resources toggles on Situation Map. |
+| Clean Filter Bar | Removed redundant "Log call" button from dashboard filter bar (canonical action lives in primary sidebar and keyboard shortcuts). |
+| Modular Shadcn Sidebar | Replaced custom rail with full Shadcn `Sidebar` suite (`SidebarProvider`, `Sidebar`, `SidebarHeader`, `SidebarContent`, `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`, `SidebarFooter`, `SidebarTrigger`). Profile settings dropdown integrated into sidebar footer. |
+| Analytics Charts | Replaced raw Recharts tooltips with Shadcn `ChartContainer`, `ChartTooltip`, and `ChartTooltipContent` (`Chart.tsx`) with custom themed indicators, tabular formatting, and accessible borders. |
+| NotificationBell Popover | Verified Radix `Popover` implementation and enhanced alert preview list with `ScrollArea withFade` for smooth scrolling. |
+| Help Desk Hero Media Tuning | High-precision desaturation of 3D red "HELP" streaks and text on `public/media/help-desk-mobile.jpg` to titanium slate hue; dimmed brightness by 12% to preserve focus on interactive UI elements. |
+
+
+
 
 ### Docker / frontend config notes
 

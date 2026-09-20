@@ -19,8 +19,8 @@ def main() -> int:
     parser.add_argument("--base-url", default=DEFAULT_BASE)
     parser.add_argument("--email", default=DEFAULT_EMAIL)
     parser.add_argument("--password", default=DEFAULT_PASSWORD)
-    parser.add_argument("--latitude", type=float, default=19.076)
-    parser.add_argument("--longitude", type=float, default=72.8777)
+    parser.add_argument("--latitude", type=float, default=12.9716)
+    parser.add_argument("--longitude", type=float, default=77.5946)
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
 

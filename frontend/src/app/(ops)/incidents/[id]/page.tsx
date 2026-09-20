@@ -98,13 +98,16 @@ export default function IncidentDetailPage() {
             />
           ) : null}
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <StatusPill status={incident.status} />
           <span className={`prio prio-${incident.priority ?? "none"}`}>
             {incident.priority ?? "unclassified"}
           </span>
-          <ClassificationReviewBadge confidence={incident.ai_confidence} />
         </div>
+        <ClassificationReviewBadge
+          confidence={incident.ai_confidence}
+          className="mt-1 w-fit"
+        />
         <p className="muted">
           {incident.category.replaceAll("_", " ")} · {incident.source}
           {incident.classification_source

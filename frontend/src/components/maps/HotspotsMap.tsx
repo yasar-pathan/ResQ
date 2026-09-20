@@ -4,9 +4,12 @@ import L from "leaflet";
 import { useEffect, useMemo } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-
-const INDIA_CENTER: [number, number] = [20.5937, 78.9629];
-const INDIA_ZOOM = 5;
+import {
+  INDIA_CENTER,
+  INDIA_DEFAULT_ZOOM,
+  INDIA_MAP_PROPS,
+  isInIndia,
+} from "@/lib/maps/india";
 
 export type HotspotPoint = { lat: number; lng: number; count: number };
 
@@ -16,7 +19,7 @@ function FitHotspots({ points }: { points: HotspotPoint[] }) {
     const t = window.setTimeout(() => {
       map.invalidateSize();
       if (points.length === 0) {
-        map.setView(INDIA_CENTER, INDIA_ZOOM);
+        map.setView(INDIA_CENTER, INDIA_DEFAULT_ZOOM);
         return;
       }
       if (points.length === 1) {
@@ -38,7 +41,8 @@ export default function HotspotsMap({
   points: HotspotPoint[];
   height?: number | string;
 }) {
-  const maxCount = useMemo(() => Math.max(1, ...points.map((p) => p.count)), [points]);
+  const inIndia = useMemo(() => points.filter((p) => isInIndia(p.lat, p.lng)), [points]);
+  const maxCount = useMemo(() => Math.max(1, ...inIndia.map((p) => p.count)), [inIndia]);
   const url =
     process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
@@ -49,13 +53,14 @@ export default function HotspotsMap({
     >
       <MapContainer
         center={INDIA_CENTER}
-        zoom={INDIA_ZOOM}
+        zoom={INDIA_DEFAULT_ZOOM}
         scrollWheelZoom
+        {...INDIA_MAP_PROPS}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url={url} />
-        <FitHotspots points={points} />
-        {points.map((p) => {
+        <FitHotspots points={inIndia} />
+        {inIndia.map((p) => {
           const radius = 10 + (p.count / maxCount) * 22;
           return (
             <CircleMarker

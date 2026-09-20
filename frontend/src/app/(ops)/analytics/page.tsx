@@ -8,11 +8,15 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/Chart";
 import { HotspotsMapDynamic } from "@/components/maps/HotspotsMapDynamic";
 import { ApiError, getApiBaseUrl } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -31,6 +35,32 @@ const CHART_COLORS = {
   critical: "#dc2626",
   other: "#64748b",
   bars: ["#1e3a8a", "#0f766e", "#b45309", "#0369a1", "#7c3aed", "#15803d", "#dc2626"],
+};
+
+const STATUS_CHART_CONFIG: ChartConfig = {
+  Active: {
+    label: "Active",
+    color: "#0369a1",
+  },
+  Resolved: {
+    label: "Resolved",
+    color: "#15803d",
+  },
+  Critical: {
+    label: "Critical",
+    color: "#dc2626",
+  },
+  Other: {
+    label: "Other",
+    color: "#64748b",
+  },
+};
+
+const CATEGORY_CHART_CONFIG: ChartConfig = {
+  count: {
+    label: "Incidents",
+    color: "#1e3a8a",
+  },
 };
 
 async function fetchAnalytics<T>(token: string, path: string): Promise<T> {
@@ -163,8 +193,15 @@ export default function AnalyticsPage() {
                 <p className="empty-state">No status slices yet.</p>
               ) : (
                 <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ChartContainer
+                    config={STATUS_CHART_CONFIG}
+                    className="mx-auto h-full w-full aspect-auto"
+                  >
                     <PieChart>
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent hideLabel />}
+                      />
                       <Pie
                         data={statusPie}
                         dataKey="value"
@@ -179,9 +216,8 @@ export default function AnalyticsPage() {
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
                     </PieChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </div>
               )}
             </section>
@@ -210,19 +246,25 @@ export default function AnalyticsPage() {
           <p className="empty-state">No category data.</p>
         ) : (
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer
+              config={CATEGORY_CHART_CONFIG}
+              className="h-full w-full aspect-auto"
+            >
               <BarChart data={categoryBars} margin={{ top: 8, right: 12, left: 0, bottom: 48 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                <Tooltip />
+                <ChartTooltip
+                  cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}
+                  content={<ChartTooltipContent indicator="line" />}
+                />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {categoryBars.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS.bars[i % CHART_COLORS.bars.length]} />
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
         )}
       </section>

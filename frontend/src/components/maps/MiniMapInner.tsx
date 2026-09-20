@@ -3,6 +3,7 @@
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { INDIA_FOCUS_ZOOM, INDIA_MAP_PROPS } from "@/lib/maps/india";
 
 const pin = L.divIcon({
   className: "",
@@ -15,7 +16,13 @@ export default function MiniMapInner({ lat, lng }: { lat: number; lng: number })
   const url =
     process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
   return (
-    <MapContainer center={[lat, lng]} zoom={15} style={{ height: 280, width: "100%" }} scrollWheelZoom={false}>
+    <MapContainer
+      center={[lat, lng]}
+      zoom={INDIA_FOCUS_ZOOM}
+      style={{ height: 280, width: "100%" }}
+      scrollWheelZoom={false}
+      {...INDIA_MAP_PROPS}
+    >
       <TileLayer attribution="&copy; OSM" url={url} />
       <Marker position={[lat, lng]} icon={pin} />
     </MapContainer>

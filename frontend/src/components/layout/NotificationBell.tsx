@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { ScrollArea } from "@/components/ui/ScrollArea";
 import { listAlerts, type AlertItem } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 
@@ -76,23 +77,25 @@ export function NotificationBell() {
         {!loading && preview.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted">No active alerts</p>
         ) : null}
-        <ul className="max-h-72 space-y-2 overflow-y-auto">
-          {preview.map((a) => (
-            <li key={a.id}>
-              <Link
-                href={`/alerts?status=active&focus=${encodeURIComponent(a.id)}`}
-                className="block rounded-control border border-border bg-slate-50 p-2 no-underline transition-colors hover:border-primary hover:bg-white"
-                onClick={() => setOpen(false)}
-              >
-                <p className="text-xs font-bold uppercase tracking-wide text-primary">
-                  {a.type.replaceAll("_", " ")}
-                </p>
-                <p className="mt-0.5 line-clamp-2 text-sm text-slate-800">{a.message}</p>
-                <p className="mt-1 text-xs text-muted">{relativeTime(a.created_at)}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <ScrollArea className="max-h-72" withFade>
+          <ul className="space-y-2 pr-2">
+            {preview.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={`/alerts?status=active&focus=${encodeURIComponent(a.id)}`}
+                  className="block rounded-control border border-border bg-slate-50 p-2 no-underline transition-colors hover:border-primary hover:bg-white"
+                  onClick={() => setOpen(false)}
+                >
+                  <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                    {a.type.replaceAll("_", " ")}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-slate-800">{a.message}</p>
+                  <p className="mt-1 text-xs text-muted">{relativeTime(a.created_at)}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
         <div className="mt-3 border-t border-border pt-3">
           <Link href="/alerts" className="btn btn-primary btn-sm w-full" onClick={() => setOpen(false)}>
             View all

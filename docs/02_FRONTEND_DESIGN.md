@@ -195,3 +195,26 @@ src/
 **Environment variables:** `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_MAP_TILE_URL` — no secrets in frontend env.
 **Typing:** TypeScript strict mode; API response types generated/maintained to mirror `03_BACKEND_ARCHITECTURE.md` §5 contract exactly.
 **Code conventions:** ESLint + Prettier enforced; no inline business logic in `ui/` components; no hardcoded copy for error/empty states (centralized message constants) to keep tone consistent, especially for SOS/critical-path screens.
+
+---
+
+## 10. UI Component Primitives & Design Tokens (Phase 16)
+
+The design system incorporates Radix UI headless accessible primitives styled with Tailwind CSS tokens and custom keyframe animations:
+
+| Component | File | Radix Primitive / Source | Usage & Behavior |
+|---|---|---|---|
+| `Skeleton` | `src/components/ui/Skeleton.tsx` | Native + CSS keyframe | Shimmer placeholder (`@keyframes shimmer`) with moving linear gradient (`#e2e8f0` → `#f1f5f9` → `#e2e8f0`) during loading states for queue cards, alert items, and resource lists. |
+| `ScrollArea` | `src/components/ui/ScrollArea.tsx` | `@radix-ui/react-scroll-area` | Cross-browser scroll container with invisible/slim custom scrollbars. Supports `withFade` and `fadeBoth` props which apply `.scroll-fade-viewport` directly to `ScrollAreaPrimitive.Viewport` via CSS `mask-image` (`linear-gradient(to bottom, black calc(100% - 44px), transparent 100%)`). Content smoothly fades out inside the active scrolling container without overlapping native scrollbars or hardcoding solid background colors. |
+| `Toast` / `useToast` | `src/components/ui/Toast.tsx` | `@radix-ui/react-toast` | Non-blocking status notifications (success, error, info) mounted globally at `OperatorShell` root via `<ToastProvider>`. Triggered via `const { toast } = useToast()`. |
+| `Tooltip` | `src/components/ui/Tooltip.tsx` | `@radix-ui/react-tooltip` | Contextual button labels for icon-only and compact action buttons (Map coordinate inspector, Open incident, Acknowledge alert, Deactivate unit). Styled with dark slate background, micro-typography, and smooth slide-in animations. |
+| `HoverCard` | `src/components/ui/HoverCard.tsx` | `@radix-ui/react-hover-card` | Rich hover preview on resource titles revealing real-time unit status, operational category, precise coordinates, and availability state without navigating away. |
+| `DropdownMenu` | `src/components/ui/DropdownMenu.tsx` | `@radix-ui/react-dropdown-menu` | Accessible floating action and filter menus with keyboard navigation and focus management. Features `DropdownMenuRadioGroup`, `DropdownMenuRadioItem`, and `DropdownMenuCheckboxItem` with check/radio indicator icons for dashboard filters (Category, Priority, Status) and operator profile controls. |
+| `Switch` | `src/components/ui/Switch.tsx` | `@radix-ui/react-switch` | Accessible two-state toggle switch with smooth thumb transition (`translate-x-4`). Utilized for situation map layer controls (Incidents & Resources toggle) on the dispatcher dashboard. |
+| `Sidebar` | `src/components/ui/Sidebar.tsx` | Shadcn Modular Sidebar Suite | Enterprise collapsible navigation layout with `SidebarProvider`, `Sidebar`, `SidebarHeader`, `SidebarContent`, `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`, `SidebarFooter`, and `SidebarTrigger`. Includes profile settings dropdown anchored to the sidebar footer and responsive mobile slide-out sheet drawer. |
+| `Chart` | `src/components/ui/Chart.tsx` | Shadcn Chart + Recharts | Styled chart container (`ChartContainer`) and custom tooltip renderer (`ChartTooltip`, `ChartTooltipContent`) supporting themed color CSS variables, dot/line indicators, and tabular value formatting for analytics status distributions and category volume bars. |
+| `Popover` | `src/components/ui/Popover.tsx` | `@radix-ui/react-popover` | Lightweight floating content container with click-outside dismissal and anchor positioning. Powers `NotificationBell` quick alert preview drawer with integrated `ScrollArea` fade. |
+| `Collapsible` | `src/components/ui/Collapsible.tsx` | `@radix-ui/react-collapsible` | Accordion grouping for alert categories (e.g., delayed response vs critical escalation) with animated height transitions and rotating chevron indicators. |
+| `Textarea` | `src/components/ui/Textarea.tsx` | Native HTML + styled ref | Resizable, comfortable textarea with relaxed line-height and theme-compliant border/focus rings for dispatcher caller notes and field-team observation notes. |
+
+

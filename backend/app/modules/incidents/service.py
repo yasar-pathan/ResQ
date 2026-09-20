@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError, AuthorizationError, NotFoundError
 from app.db.geo import point_to_lat_lng, point_wkt
-from app.models.enums import IncidentCategory, IncidentPriority, IncidentSource, IncidentStatus
+from app.models.enums import (
+    IncidentCategory,
+    IncidentPriority,
+    IncidentSource,
+    IncidentStatus,
+)
 from app.models.incident import Incident
 from app.models.user import User, UserRole
 from app.modules.incidents.pii import resolve_pii_visibility
@@ -16,7 +21,6 @@ from app.modules.incidents.schemas import (
     SosCreateRequest,
 )
 from app.modules.incidents.state_machine import validate_transition
-
 
 AUTH_REQUIRED_SOURCES = {
     IncidentSource.sensor,
@@ -71,9 +75,7 @@ class IncidentService:
             return existing, True
 
         initial_priority = None
-        if body.source == IncidentSource.sos:
-            initial_priority = IncidentPriority.critical
-        elif body.category == IncidentCategory.personal_safety:
+        if body.source == IncidentSource.sos or body.category == IncidentCategory.personal_safety:
             initial_priority = IncidentPriority.critical
 
         incident = Incident(
@@ -138,7 +140,9 @@ class IncidentService:
         }
 
     async def list_incidents(self, params: IncidentListParams, viewer: User | None = None) -> dict:
+        from app.models.assignment import Assignment
         from app.models.enums import IncidentPriority
+        from app.models.resource import Resource
 
         priority = IncidentPriority(params.priority) if params.priority else None
         rows, total = await self.repo.list_incidents(
@@ -148,10 +152,40 @@ class IncidentService:
             page=params.page,
             limit=params.limit,
         )
+
+        # Build a map of active assignments per incident_id for enrichment
+        incident_ids = [i.id for i in rows]
+        active_assignment_map: dict = {}
+        if incident_ids:
+            from sqlalchemy import select as sa_select
+
+            from app.models.enums import AssignmentStatus as AS
+            active_statuses = [AS.confirmed, AS.en_route, AS.on_scene, AS.proposed]
+            stmt = (
+                sa_select(Assignment, Resource)
+                .join(Resource, Resource.id == Assignment.resource_id)
+                .where(
+                    Assignment.incident_id.in_(incident_ids),
+                    Assignment.status.in_(active_statuses),
+                )
+            )
+            result = await self.session.execute(stmt)
+            for assignment, resource in result.all():
+                # Only keep the first/most-recent active assignment per incident
+                iid = str(assignment.incident_id)
+                if iid not in active_assignment_map:
+                    active_assignment_map[iid] = {
+                        "resource_name": resource.name,
+                        "status": assignment.status.value,
+                    }
+
         items = []
         for i in rows:
             pii = await resolve_pii_visibility(self.session, i, viewer)
-            items.append(serialize_incident(i, viewer, pii=pii))
+            serialized = serialize_incident(i, viewer, pii=pii)
+            # Attach active_assignment summary (None if no active assignment)
+            serialized["active_assignment"] = active_assignment_map.get(str(i.id))
+            items.append(serialized)
         await self.session.commit()
         return {
             "items": items,
@@ -159,6 +193,7 @@ class IncidentService:
             "page": params.page,
             "limit": params.limit,
         }
+
 
     async def get_incident_detail(self, incident_id: uuid.UUID, viewer: User) -> dict:
         incident = await self.repo.get_by_id(incident_id)

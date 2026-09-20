@@ -16,3 +16,4 @@ dist/
 Thumbs.db
 .cursor/
 _git_restore/
+*.tsbuildinfo

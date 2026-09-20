@@ -69,7 +69,7 @@ docker compose run --rm migrate
 docker compose run --rm api python -m app.scripts.seed_dev
 ```
 
-Seed marker: `SEED00000002`.
+Seed marker: `SEED00000003` (Bengaluru metro demo only).
 
 ---
 
@@ -151,3 +151,47 @@ Historical Phase 11 sign-off checklist (if needed): `08_IDE_IMPLEMENTATION_PROMP
 ```bash
 bash scripts/lint-gate.sh
 ```
+
+---
+
+## 10. F-03 Multi-source intake demo (Phase 15)
+
+PRD F-03 requires three operator intake paths in addition to citizen web reports. All paths share the same `POST /incidents` pipeline with differing `source` values.
+
+### 10.1 Dispatcher call intake (`source=call`)
+
+1. Login as dispatcher (`dispatcher@rescuegrid.dev`) → navigated to `/dashboard`.
+2. Click **Log call** button in the dashboard header (or sidebar → **Log call**).
+3. Fill in category, caller description, pick/confirm a location, optionally add address/notes.
+4. Submit → success screen shows `tracking_ref`, **Open incident**, **Dashboard**, and **Log another call** links.
+5. Return to dashboard → new card appears in queue with a `Call` source chip.
+
+### 10.2 Sensor intake (`source=sensor`)
+
+```powershell
+docker compose run --rm api python -m app.scripts.simulate_sensor_intake
+```
+
+Simulates an automated sensor event. Check the dashboard queue for an incident with `Sensor` source chip.
+
+### 10.3 Field-team report (`source=field_team`)
+
+1. Login as field user (`field@rescuegrid.dev`).
+2. Sidebar shows **Assignments** and **Report incident** nav items.
+3. Click **Report incident** → `/field/report`.
+4. Fill category, observation notes, pick a location on the map.
+5. Submit → success screen with `tracking_ref`, **View incident**, **My assignments**, **Report another**.
+6. Dispatcher dashboard queue shows the incident with `Field` source chip.
+
+### 10.4 Verification summary
+
+| Source | UI path | Chip colour |
+|--------|---------|-------------|
+| `call` | `/incidents/log` | Blue |
+| `sensor` | `simulate_sensor_intake.py` | Green |
+| `field_team` | `/field/report` | Yellow |
+| `citizen_web` | `/report` | Purple |
+| `sos` | `/sos` | Red |
+
+All four non-citizen paths and the citizen path should produce incidents visible in the dispatcher dashboard queue with correct source chips.
+

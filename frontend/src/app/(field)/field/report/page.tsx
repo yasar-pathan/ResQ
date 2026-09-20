@@ -25,7 +25,7 @@ type SuccessResult = {
   tracking_ref: string;
 };
 
-export default function LogCallPage() {
+export default function FieldReportPage() {
   const { getToken, refreshSession } = useAuth();
   const { toast } = useToast();
   const [values, setValues] = useState<ReportFormValues>(initial);
@@ -33,6 +33,7 @@ export default function LogCallPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [result, setResult] = useState<SuccessResult | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -52,18 +53,18 @@ export default function LogCallPage() {
             longitude: Number(values.longitude),
           },
           address_text: values.address_text.trim() || undefined,
-          source: "call",
-          idempotency_key: newIdempotencyKey("logcall"),
+          source: "field_team",
+          idempotency_key: newIdempotencyKey("field"),
         }),
       );
       setResult({ id: created.id, tracking_ref: created.tracking_ref });
       toast({
-        title: "Call incident logged",
+        title: "Field report submitted",
         description: `Tracking ref: ${created.tracking_ref}`,
         variant: "success",
       });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Unable to log call.";
+      const msg = err instanceof ApiError ? err.message : "Unable to submit report.";
       setFormError(msg);
       toast({
         title: "Submission failed",
@@ -79,26 +80,21 @@ export default function LogCallPage() {
     return (
       <section className="stack max-w-xl animate-enter">
         <div className="alert-success">
-          <h1 className="text-xl font-bold">Call logged ✓</h1>
+          <h1 className="text-xl font-bold">Report submitted ✓</h1>
           <p className="mt-1 text-sm">
             Incident{" "}
-            <strong className="font-mono">{result.tracking_ref}</strong> is queued for
-            classification with source{" "}
-            <span className="source-chip source-chip-call inline-flex">Call</span>.
+            <strong className="font-mono">{result.tracking_ref}</strong> has been queued with
+            source{" "}
+            <span className="source-chip source-chip-field_team inline-flex">Field</span>.
+            Dispatchers will classify and assign resources.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/incidents/${result.id}`}
-            className="btn btn-primary"
-          >
-            Open incident
+          <Link href={`/incidents/${result.id}`} className="btn btn-primary">
+            View incident
           </Link>
-          <Link
-            href={`/dashboard?selected=${result.id}`}
-            className="btn btn-secondary"
-          >
-            Dashboard
+          <Link href="/field/assignments" className="btn btn-secondary">
+            My assignments
           </Link>
           <button
             type="button"
@@ -109,7 +105,7 @@ export default function LogCallPage() {
               setErrors({});
             }}
           >
-            Log another call
+            Report another
           </button>
         </div>
       </section>
@@ -120,18 +116,19 @@ export default function LogCallPage() {
     <section className="stack max-w-xl animate-enter">
       <header className="stack gap-1">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Log a call</h1>
-          <span className="source-chip source-chip-call">Call</span>
+          <h1 className="text-2xl font-bold">Report incident</h1>
+          <span className="source-chip source-chip-field_team">Field</span>
         </div>
         <p className="text-sm text-muted">
-          Dispatcher intake for phone or radio reports. Creates an incident with source{" "}
-          <code className="text-xs">call</code> — same classification pipeline as citizen reports.
+          Field-team intake. Submit what you observe on the ground — dispatchers will triage and
+          assign resources. Source is recorded as{" "}
+          <code className="text-xs">field_team</code>.
         </p>
       </header>
 
       <form className="stack gap-4" onSubmit={onSubmit} noValidate>
         <label className="stack gap-1 text-sm">
-          Category
+          Incident type
           <select
             className="field"
             value={values.category}
@@ -146,10 +143,10 @@ export default function LogCallPage() {
         </label>
 
         <label className="stack gap-1 text-sm">
-          Caller description
+          Observation notes
           <Textarea
             className="min-h-[120px]"
-            placeholder="Describe the emergency as reported by the caller…"
+            placeholder="Describe what you are observing on the ground…"
             value={values.description}
             onChange={(e) => setValues((v) => ({ ...v, description: e.target.value }))}
             required
@@ -161,26 +158,25 @@ export default function LogCallPage() {
           latitude={values.latitude}
           longitude={values.longitude}
           onChange={(lat, lng) => setValues((v) => ({ ...v, latitude: lat, longitude: lng }))}
+          onHint={setHint}
           error={errors.latitude || errors.longitude}
         />
+        {hint ? <p className="text-xs text-muted">{hint}</p> : null}
 
         <label className="stack gap-1 text-sm">
-          Address / caller notes (optional)
+          Address / landmark (optional)
           <input
             className="field"
-            placeholder="e.g. Near MG Road, landmark details, cross-street…"
+            placeholder="e.g. Near water tank, junction with Ring Road…"
             value={values.address_text}
             onChange={(e) => setValues((v) => ({ ...v, address_text: e.target.value }))}
           />
-          <span className="text-xs text-muted">
-            Mapped to address text; useful for operators without precise coordinates.
-          </span>
         </label>
 
         {formError ? <p className="form-error">{formError}</p> : null}
 
         <Button type="submit" disabled={submitting}>
-          {submitting ? "Submitting…" : "Log call incident"}
+          {submitting ? "Submitting…" : "Submit field report"}
         </Button>
       </form>
     </section>

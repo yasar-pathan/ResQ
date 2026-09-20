@@ -255,6 +255,11 @@ export type IncidentListItem = IncidentCreated & {
   classification_source?: string | null;
   classified_at?: string | null;
   tracking_ref: string;
+  /** Active assignment summary injected by the list API (Phase 15). */
+  active_assignment?: {
+    resource_name: string;
+    status: string;
+  } | null;
 };
 
 export async function listIncidents(
