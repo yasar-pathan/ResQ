@@ -195,6 +195,8 @@ src/
 **Environment variables:** `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_MAP_TILE_URL` — no secrets in frontend env.
 **Typing:** TypeScript strict mode; API response types generated/maintained to mirror `03_BACKEND_ARCHITECTURE.md` §5 contract exactly.
 **Code conventions:** ESLint + Prettier enforced; no inline business logic in `ui/` components; no hardcoded copy for error/empty states (centralized message constants) to keep tone consistent, especially for SOS/critical-path screens.
+**Docker-Native Build Execution Rule (MANDATORY):** All frontend build operations (`npm run build`, `npm install`, package additions, and compilation validation) MUST be executed **inside Docker containers** (e.g., `docker compose run --rm frontend npm run build` or `docker compose exec frontend npm ...`). **NEVER run local `npm run build` on the host machine.** Host-level builds produce conflicting local caches and build info files (`.next`, `tsconfig.tsbuildinfo`) that cause cache skew with Docker volume mounts (`frontend_next`, `frontend_node_modules`). Rebuild container images via `docker compose build frontend` / `docker compose up -d --build frontend` whenever packages or Dockerfiles change.
+**Brand & Hero Media Integrity Rule (MANDATORY):** The citizen landing hero image (`public/media/help-desk-mobile.jpg`) and its overlay styling (`.home-hero-img`, `.home-hero-veil`) must maintain their authentic color vibrancy and contrast without aggressive desaturation, tinting, or darkening. Overlays must remain subtly balanced for legible white typography and brand marks without muting visual fidelity.
 
 ---
 

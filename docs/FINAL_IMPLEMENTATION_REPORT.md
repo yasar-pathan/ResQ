@@ -156,8 +156,8 @@ docker compose run --rm api alembic current
 | Clean Filter Bar | Removed redundant "Log call" button from dashboard filter bar (canonical action lives in primary sidebar and keyboard shortcuts). |
 | Modular Shadcn Sidebar | Replaced custom rail with full Shadcn `Sidebar` suite (`SidebarProvider`, `Sidebar`, `SidebarHeader`, `SidebarContent`, `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`, `SidebarFooter`, `SidebarTrigger`). Profile settings dropdown integrated into sidebar footer. |
 | Analytics Charts | Replaced raw Recharts tooltips with Shadcn `ChartContainer`, `ChartTooltip`, and `ChartTooltipContent` (`Chart.tsx`) with custom themed indicators, tabular formatting, and accessible borders. |
-| NotificationBell Popover | Verified Radix `Popover` implementation and enhanced alert preview list with `ScrollArea withFade` for smooth scrolling. |
-| Help Desk Hero Media Tuning | High-precision desaturation of 3D red "HELP" streaks and text on `public/media/help-desk-mobile.jpg` to titanium slate hue; dimmed brightness by 12% to preserve focus on interactive UI elements. |
+| Help Desk Hero Media Integrity | Reverted `public/media/help-desk-mobile.jpg` and CSS veil/brightness to original authentic color vibrancy and contrast, per binding design rules. |
+| Docker-Native Build Rule | Mandated and verified that all frontend builds (`npm run build`, `npm install`) MUST execute inside Docker containers (`docker compose run --rm frontend npm run build`), strictly prohibiting local host builds. |
 
 
 
