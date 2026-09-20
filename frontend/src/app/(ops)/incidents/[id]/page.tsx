@@ -44,11 +44,14 @@ export default function IncidentDetailPage() {
     const token = getToken();
     if (!token || !id) return;
     try {
-      setIncident(await getIncident(token, id));
-      const r = await getRecommendations(token, id);
+      const [inc, r, avail] = await Promise.all([
+        getIncident(token, id),
+        getRecommendations(token, id),
+        listResources(token, { status: "available" }),
+      ]);
+      setIncident(inc);
       setRecs(r.items);
       setEmptyReason(r.empty_reason);
-      const avail = await listResources(token, { status: "available" });
       setResources(avail.items);
       setError(null);
     } catch (err) {

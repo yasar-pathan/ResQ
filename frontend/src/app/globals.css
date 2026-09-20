@@ -19,6 +19,8 @@
   --color-border: #e2e8f0;
   --radius-control: 6px;
   --radius-panel: 10px;
+  --font-display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-display-stack: var(--font-display), "Segoe UI", system-ui, sans-serif;
   --font-citizen: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
   --space-1: 4px;

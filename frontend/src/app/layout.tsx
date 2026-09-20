@@ -1,18 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
-
-const display = Manrope({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["600", "700", "800"],
-});
-
-const body = Source_Sans_3({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "RescueGrid",
@@ -46,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

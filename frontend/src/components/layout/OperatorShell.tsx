@@ -163,6 +163,7 @@ function ShellNavItems({
           <SidebarMenuItem key={l.href}>
             <Link
               href={l.href}
+              prefetch={true}
               onClick={onNavigate}
               className="block no-underline text-inherit"
               title={collapsed ? l.label : undefined}

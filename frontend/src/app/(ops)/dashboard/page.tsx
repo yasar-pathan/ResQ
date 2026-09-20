@@ -529,6 +529,7 @@ function DashboardInner() {
                       <Tooltip tip="Open triage &amp; resource assignment">
                         <button
                           type="button"
+                          onMouseEnter={() => router.prefetch(`/incidents/${inc.id}`)}
                           onClick={() => {
                             setOpeningId(inc.id);
                             router.push(`/incidents/${inc.id}`);
