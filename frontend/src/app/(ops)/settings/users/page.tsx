@@ -1,6 +1,14 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import { ApiError, getApiBaseUrl, type UserPublic } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 
@@ -92,11 +100,26 @@ export default function UsersSettingsPage() {
           required
           minLength={8}
         />
-        <select className="field" value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="dispatcher">Dispatcher</option>
-          <option value="field_team">Field team</option>
-          <option value="admin">Admin</option>
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex h-9 w-full items-center justify-between rounded-control border border-border bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <span className="capitalize">
+                {role === "field_team" ? "Field team" : role}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 text-muted" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56 bg-surface">
+            <DropdownMenuRadioGroup value={role} onValueChange={setRole}>
+              <DropdownMenuRadioItem value="dispatcher">Dispatcher</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="field_team">Field team</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <button className="btn btn-primary" type="submit">
           Create user
         </button>

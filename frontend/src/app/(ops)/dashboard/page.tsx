@@ -308,7 +308,7 @@ function DashboardInner() {
             )}
           </div>
           <ScrollArea className="min-h-0 flex-1" withFade>
-            <ul className="queue-list list-none space-y-2 p-3">
+            <ul className="queue-list list-none space-y-2 p-3 pb-12">
               {loading && incidents.length === 0 ? (
                 <>
                   {[1, 2, 3, 4, 5].map((i) => (

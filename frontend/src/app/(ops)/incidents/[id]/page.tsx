@@ -3,9 +3,18 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { StatusPill } from "@/components/domain/StatusPill";
 import { ClassificationReviewBadge } from "@/components/domain/ClassificationReviewBadge";
 import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
+import { ScrollArea } from "@/components/ui/ScrollArea";
 import {
   ApiError,
   assignResource,
@@ -164,19 +173,35 @@ export default function IncidentDetailPage() {
         <h2>Manual assign</h2>
         <p className="muted">Pick any available resource (decision=manual).</p>
         <div className="cta-row">
-          <select
-            className="field"
-            value={manualId}
-            onChange={(e) => setManualId(e.target.value)}
-            aria-label="Available resource"
-          >
-            <option value="">Select resource…</option>
-            {resources.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} ({r.type})
-              </option>
-            ))}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-9 min-w-[220px] items-center justify-between gap-2 rounded-control border border-border bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+                aria-label="Available resource"
+              >
+                <span className="truncate">
+                  {manualId
+                    ? (() => {
+                        const res = resources.find((r) => r.id === manualId);
+                        return res ? `${res.name} (${res.type})` : "Select resource…";
+                      })()
+                    : "Select resource…"}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64 bg-surface max-h-60 overflow-y-auto">
+              <DropdownMenuRadioGroup value={manualId} onValueChange={setManualId}>
+                <DropdownMenuRadioItem value="">Select resource…</DropdownMenuRadioItem>
+                {resources.map((r) => (
+                  <DropdownMenuRadioItem key={r.id} value={r.id}>
+                    {r.name} ({r.type})
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             type="button"
             className="btn btn-secondary"

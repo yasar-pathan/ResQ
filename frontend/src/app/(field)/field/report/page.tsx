@@ -2,8 +2,16 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { LocationPicker } from "@/components/maps/LocationPicker";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError, createOpsIncident, newIdempotencyKey } from "@/lib/api/client";
@@ -127,20 +135,34 @@ export default function FieldReportPage() {
       </header>
 
       <form className="stack gap-4" onSubmit={onSubmit} noValidate>
-        <label className="stack gap-1 text-sm">
-          Incident type
-          <select
-            className="field"
-            value={values.category}
-            onChange={(e) => setValues((v) => ({ ...v, category: e.target.value }))}
-          >
-            {INCIDENT_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="stack gap-1 text-sm">
+          <span>Incident type</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex h-9 w-full items-center justify-between rounded-control border border-border bg-white px-3 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <span className="capitalize">
+                  {INCIDENT_CATEGORIES.find((c) => c.value === values.category)?.label || values.category}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 bg-surface">
+              <DropdownMenuRadioGroup
+                value={values.category}
+                onValueChange={(v) => setValues((prev) => ({ ...prev, category: v }))}
+              >
+                {INCIDENT_CATEGORIES.map((c) => (
+                  <DropdownMenuRadioItem key={c.value} value={c.value}>
+                    {c.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         <label className="stack gap-1 text-sm">
           Observation notes

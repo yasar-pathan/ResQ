@@ -19,6 +19,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/Chart";
+import { ScrollArea } from "@/components/ui/ScrollArea";
 import { HotspotsMapDynamic } from "@/components/maps/HotspotsMapDynamic";
 import { ApiError, getApiBaseUrl } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -152,138 +153,142 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <div className="stack h-full min-h-0 overflow-y-auto" style={{ gap: "1.5rem", width: "100%" }}>
-      <header>
-        <h1 className="font-display text-xl font-bold md:text-2xl">Analytics</h1>
-        <p className="text-sm text-muted">Aggregate KPIs — no personal-safety identity fields</p>
-      </header>
-      {loading || authLoading ? <p className="muted">Loading…</p> : null}
-      {error ? <p className="form-error">{error}</p> : null}
-      {!loading && !authLoading && !overview && !error ? (
-        <p className="empty-state">No analytics data in range.</p>
-      ) : null}
+    <ScrollArea className="h-full min-h-0 flex-1" withFade>
+      <div className="space-y-6 p-1 pr-3 pb-12">
+        <header>
+          <h1 className="font-display text-xl font-bold md:text-2xl">Analytics</h1>
+          <p className="text-sm text-muted">Aggregate KPIs — no personal-safety identity fields</p>
+        </header>
+        {loading || authLoading ? <p className="muted">Loading…</p> : null}
+        {error ? <p className="form-error">{error}</p> : null}
+        {!loading && !authLoading && !overview && !error ? (
+          <p className="empty-state">No analytics data in range.</p>
+        ) : null}
 
-      {overview ? (
-        <>
-          <div className="kpi-row">
-            <div className="kpi">
-              <span className="muted">Total</span>
-              <strong>{overview.total_incidents}</strong>
+        {overview ? (
+          <>
+            <div className="kpi-row">
+              <div className="kpi">
+                <span className="muted">Total</span>
+                <strong>{overview.total_incidents}</strong>
+              </div>
+              <div className="kpi">
+                <span className="muted">Active</span>
+                <strong>{overview.active}</strong>
+              </div>
+              <div className="kpi">
+                <span className="muted">Resolved</span>
+                <strong>{overview.resolved}</strong>
+              </div>
+              <div className="kpi">
+                <span className="muted">Critical</span>
+                <strong>{overview.critical}</strong>
+              </div>
+              <div className="kpi">
+                <span className="muted">Personal safety (count only)</span>
+                <strong>{overview.personal_safety_count}</strong>
+              </div>
             </div>
-            <div className="kpi">
-              <span className="muted">Active</span>
-              <strong>{overview.active}</strong>
-            </div>
-            <div className="kpi">
-              <span className="muted">Resolved</span>
-              <strong>{overview.resolved}</strong>
-            </div>
-            <div className="kpi">
-              <span className="muted">Critical</span>
-              <strong>{overview.critical}</strong>
-            </div>
-            <div className="kpi">
-              <span className="muted">Personal safety (count only)</span>
-              <strong>{overview.personal_safety_count}</strong>
-            </div>
-          </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <section className="rounded-panel border border-border bg-surface p-4">
-              <h2 className="mb-3 text-base font-bold">Status distribution</h2>
-              {statusPie.length === 0 ? (
-                <p className="empty-state">No status slices yet.</p>
-              ) : (
-                <div className="h-72 w-full">
-                  <ChartContainer
-                    config={STATUS_CHART_CONFIG}
-                    className="mx-auto h-full w-full aspect-auto"
-                  >
-                    <PieChart>
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                      <Pie
-                        data={statusPie}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="42%"
-                        innerRadius={48}
-                        outerRadius={72}
-                        paddingAngle={2}
-                      >
-                        {statusPie.map((entry) => (
-                          <Cell key={entry.name} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartLegend content={<ChartLegendContent />} />
-                    </PieChart>
-                  </ChartContainer>
-                </div>
-              )}
-            </section>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <section className="rounded-panel border border-border bg-surface p-4">
+                <h2 className="mb-3 text-base font-bold">Status distribution</h2>
+                {statusPie.length === 0 ? (
+                  <p className="empty-state">No status slices yet.</p>
+                ) : (
+                  <div className="h-72 w-full">
+                    <ChartContainer
+                      config={STATUS_CHART_CONFIG}
+                      className="mx-auto h-full w-full aspect-auto"
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Pie
+                          data={statusPie}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="42%"
+                          innerRadius={48}
+                          outerRadius={72}
+                          paddingAngle={2}
+                        >
+                          {statusPie.map((entry) => (
+                            <Cell key={entry.name} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartLegend content={<ChartLegendContent />} />
+                      </PieChart>
+                    </ChartContainer>
+                  </div>
+                )}
+              </section>
 
-            <section className="rounded-panel border border-border bg-surface p-4">
-              <h2 className="mb-3 text-base font-bold">Response delays</h2>
-              {delays ? (
-                <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-                  <p className="text-sm text-muted">Avg minutes to first assignment</p>
-                  <p className="font-display text-5xl font-bold text-slate-900">
-                    {delays.avg_minutes_to_assign}
-                  </p>
-                  <p className="text-sm text-muted">{delays.assigned_count} assigned incidents</p>
-                </div>
-              ) : (
-                <p className="empty-state">No delay metrics.</p>
-              )}
-            </section>
-          </div>
-        </>
-      ) : null}
+              <section className="rounded-panel border border-border bg-surface p-4">
+                <h2 className="mb-3 text-base font-bold">Response delays</h2>
+                {delays ? (
+                  <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
+                    <p className="text-sm text-muted">Avg minutes to first assignment</p>
+                    <p className="font-display text-5xl font-bold text-slate-900">
+                      {delays.avg_minutes_to_assign}
+                    </p>
+                    <p className="text-sm text-muted">{delays.assigned_count} assigned incidents</p>
+                  </div>
+                ) : (
+                  <p className="empty-state">No delay metrics.</p>
+                )}
+              </section>
+            </div>
+          </>
+        ) : null}
 
-      <section className="rounded-panel border border-border bg-surface p-4">
-        <h2 className="mb-3 text-base font-bold">By category</h2>
-        {categoryBars.length === 0 ? (
-          <p className="empty-state">No category data.</p>
-        ) : (
-          <div className="h-80 w-full">
-            <ChartContainer
-              config={CATEGORY_CHART_CONFIG}
-              className="h-full w-full aspect-auto"
-            >
-              <BarChart data={categoryBars} margin={{ top: 8, right: 12, left: 0, bottom: 48 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                <ChartTooltip
-                  cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}
-                  content={<ChartTooltipContent indicator="line" />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {categoryBars.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS.bars[i % CHART_COLORS.bars.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </div>
-        )}
-      </section>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section className="flex flex-col rounded-panel border border-border bg-surface p-4">
+            <h2 className="mb-3 text-base font-bold">By category</h2>
+            {categoryBars.length === 0 ? (
+              <p className="empty-state">No category data.</p>
+            ) : (
+              <div className="h-80 w-full">
+                <ChartContainer
+                  config={CATEGORY_CHART_CONFIG}
+                  className="h-full w-full aspect-auto"
+                >
+                  <BarChart data={categoryBars} margin={{ top: 8, right: 12, left: 0, bottom: 48 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <ChartTooltip
+                      cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}
+                      content={<ChartTooltipContent indicator="line" />}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                      {categoryBars.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS.bars[i % CHART_COLORS.bars.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            )}
+          </section>
 
-      <section className="rounded-panel border border-border bg-surface p-4">
-        <h2 className="mb-1 text-base font-bold">Hotspots (anonymized buckets)</h2>
-        <p className="mb-3 text-sm text-muted">Incident density across India — no personal identifiers.</p>
-        {hotspots.length === 0 ? (
-          <p className="empty-state">No hotspot data.</p>
-        ) : (
-          <div className="min-h-[420px]">
-            <HotspotsMapDynamic points={hotspots} height={420} />
-          </div>
-        )}
-      </section>
-    </div>
+          <section className="flex flex-col rounded-panel border border-border bg-surface p-4">
+            <h2 className="mb-1 text-base font-bold">Hotspots (anonymized buckets)</h2>
+            <p className="mb-3 text-sm text-muted">Incident density across India — no personal identifiers.</p>
+            {hotspots.length === 0 ? (
+              <p className="empty-state">No hotspot data.</p>
+            ) : (
+              <div className="h-80 w-full overflow-hidden rounded-control">
+                <HotspotsMapDynamic points={hotspots} height={320} />
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </ScrollArea>
   );
 }

@@ -6,6 +6,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StatusPill } from "@/components/domain/StatusPill";
 import { LocationMapDialog } from "@/components/maps/LocationMapDialog";
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from "@/components/ui/Collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -102,27 +109,38 @@ function AlertsPageInner() {
           <p className="text-sm text-muted">Critical, delayed-response, and escalation alerts</p>
         </div>
         <div className="alerts-filter-row">
-          <label className="sr-only" htmlFor="alert-status-filter">
-            Alert status
-          </label>
-          <select
-            id="alert-status-filter"
-            className="field"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Alert status filter"
-          >
-            <option value="active">Active only</option>
-            <option value="acknowledged">Acknowledged</option>
-            <option value="">All statuses</option>
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-2 rounded-control border border-border bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+                aria-label="Alert status filter"
+              >
+                <span>
+                  {statusFilter === "active"
+                    ? "Status: Active only"
+                    : statusFilter === "acknowledged"
+                    ? "Status: Acknowledged"
+                    : "Status: All"}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-surface">
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={setStatusFilter}>
+                <DropdownMenuRadioItem value="active">Active only</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="acknowledged">Acknowledged</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="">All statuses</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
       {error ? <p className="form-error shrink-0">{error}</p> : null}
 
       <ScrollArea className="alerts-scroll min-h-0 flex-1" withFade>
-        <div className="space-y-4 p-1">
+        <div className="space-y-4 px-2 py-3 pb-12">
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (

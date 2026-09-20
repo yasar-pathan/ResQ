@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
   Info,
   MapPin,
   Phone,
@@ -14,6 +15,13 @@ import {
 } from "lucide-react";
 import { LocationPicker } from "@/components/maps/LocationPicker";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError, createOpsIncident, newIdempotencyKey } from "@/lib/api/client";
@@ -266,35 +274,57 @@ export default function LogCallPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="stack gap-1 text-xs font-semibold text-slate-700">
-                    Emergency Category
-                    <select
-                      className="field h-9 text-xs"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                    >
-                      {INCIDENT_CATEGORIES.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="stack gap-1 text-xs font-semibold text-slate-700">
+                    <span>Emergency Category</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex h-9 w-full items-center justify-between rounded-control border border-border bg-white px-3 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <span className="capitalize">
+                            {INCIDENT_CATEGORIES.find((c) => c.value === category)?.label || category}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 text-muted" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56 bg-surface">
+                        <DropdownMenuRadioGroup value={category} onValueChange={setCategory}>
+                          {INCIDENT_CATEGORIES.map((c) => (
+                            <DropdownMenuRadioItem key={c.value} value={c.value}>
+                              {c.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
-                  <label className="stack gap-1 text-xs font-semibold text-slate-700">
-                    Intake Channel
-                    <select
-                      className="field h-9 text-xs"
-                      value={callChannel}
-                      onChange={(e) => setCallChannel(e.target.value)}
-                    >
-                      {CALL_CHANNELS.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="stack gap-1 text-xs font-semibold text-slate-700">
+                    <span>Intake Channel</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex h-9 w-full items-center justify-between rounded-control border border-border bg-white px-3 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <span className="truncate">
+                            {CALL_CHANNELS.find((c) => c.value === callChannel)?.label || callChannel}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-64 bg-surface">
+                        <DropdownMenuRadioGroup value={callChannel} onValueChange={setCallChannel}>
+                          {CALL_CHANNELS.map((c) => (
+                            <DropdownMenuRadioItem key={c.value} value={c.value}>
+                              {c.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
 

@@ -254,4 +254,17 @@ Heavy dispatcher map/queue workflows remain desktop-preferred. Operator install 
 - **Hover Light Elevation**: Subtle shadow transition on hover (`hover:shadow-sm`) across all sidebar buttons and header controls.
 - **Size Consistency**: Collapse toggle button standardized to `h-10 w-10`, exactly matching operational button heights and collapsed dimensions.
 
+### 10.5 Analytics Grid Reorganization, Universal Shadcn Dropdowns & Scroll Spacing
+- **Analytics Sideways Layout**: Positioned "By category" bar chart and "Hotspots (anonymized buckets)" situation map sideways side-by-side (`grid gap-4 lg:grid-cols-2`), creating a balanced 2x2 dashboard grid alongside Status Distribution and Response Delays.
+- **Analytics Scroll Fade**: Encapsulated the analytics viewport in `<ScrollArea withFade>` with right padding (`pr-3 pb-12`), rendering dynamic top and bottom fades where the vertical scrollbar operates.
+- **Universal Shadcn DropdownMenu Migration**: Replaced all native `<select>` elements with accessible Radix `DropdownMenu` + `DropdownMenuRadioGroup` primitives:
+  - Resources inventory status filter & unit creation type selector (`/resources`).
+  - Alerts center status filter (`/alerts`).
+  - Incident triage manual resource dispatch selector (`/incidents/[id]`).
+  - System user management role selector (`/settings/users`).
+  - Field unit reporting incident category selector (`/field/report`).
+  - Dispatch intake emergency category and channel selectors (`/incidents/log`).
+- **Scroll Fade Clearance**: Standardized generous bottom padding (`pb-12` / `pb-6`) across Alerts list, Queue list, Resources table, and Notification Popover to prevent items from colliding with the bottom fade overlay.
+
+
 

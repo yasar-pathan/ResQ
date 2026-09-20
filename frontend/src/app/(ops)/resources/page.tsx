@@ -2,10 +2,17 @@
 
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Ambulance, Building2, MapPin, Users, Wrench, type LucideIcon } from "lucide-react";
+import { Ambulance, Building2, ChevronDown, MapPin, Users, Wrench, type LucideIcon } from "lucide-react";
 import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
 import { resourceStatusColor } from "@/components/maps/mapStyles";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import { HoverCard } from "@/components/ui/HoverCard";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -154,17 +161,34 @@ function ResourcesPageInner() {
           <p className="text-sm text-muted">Inventory and map of response units</p>
         </div>
         <div className="filter-row !mt-0">
-          <select
-            className="field"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Resource status filter"
-          >
-            <option value="">All statuses</option>
-            <option value="available">Available</option>
-            <option value="assigned">Assigned</option>
-            <option value="unavailable">Unavailable</option>
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-2 rounded-control border border-border bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+                aria-label="Resource status filter"
+              >
+                <span>
+                  {statusFilter === "available"
+                    ? "Status: Available"
+                    : statusFilter === "assigned"
+                    ? "Status: Assigned"
+                    : statusFilter === "unavailable"
+                    ? "Status: Unavailable"
+                    : "Status: All"}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-surface">
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={setStatusFilter}>
+                <DropdownMenuRadioItem value="">All statuses</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="available">Available</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="assigned">Assigned</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="unavailable">Unavailable</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -217,17 +241,26 @@ function ResourcesPageInner() {
                 onChange={(e) => setName(e.target.value)}
                 required
               />
-              <select
-                className="field"
-                value={type}
-                onChange={(e) => setType(e.target.value as typeof type)}
-              >
-                {RESOURCE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-9 w-full items-center justify-between rounded-control border border-border bg-white px-3 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <span className="capitalize">{type.replaceAll("_", " ")}</span>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 bg-surface">
+                  <DropdownMenuRadioGroup value={type} onValueChange={(v) => setType(v as typeof type)}>
+                    {RESOURCE_TYPES.map((t) => (
+                      <DropdownMenuRadioItem key={t} value={t} className="capitalize">
+                        {t.replaceAll("_", " ")}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="filter-row !mt-0">
                 <input
                   className="field"
@@ -255,7 +288,7 @@ function ResourcesPageInner() {
             withFade
           >
             {loading ? (
-              <div className="space-y-3 p-3">
+              <div className="space-y-3 p-3 pb-12">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
@@ -271,7 +304,7 @@ function ResourcesPageInner() {
             ) : null}
 
             {!loading && (
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-border pb-12">
                 {items.length === 0 ? (
                   <li className="p-4 text-sm text-muted">No resources match this filter.</li>
                 ) : (
