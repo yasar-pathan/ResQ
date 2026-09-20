@@ -55,12 +55,12 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-control text-slate-700 transition-colors hover:bg-slate-100"
+          className="relative inline-flex h-10 w-10 items-center justify-center rounded-control border-0 bg-transparent text-black transition-all duration-150 hover:shadow-sm focus:outline-none"
           aria-label={`Alerts${alerts.length ? `, ${alerts.length} active` : ""}`}
         >
-          <Bell className="h-5 w-5" strokeWidth={1.75} />
+          <Bell className="h-5 w-5 text-black" strokeWidth={1.75} />
           {alerts.length > 0 ? (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-sos px-1 text-[11px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-sos px-1 text-[11px] font-bold text-white shadow-sm">
               {alerts.length > 99 ? "99+" : alerts.length}
             </span>
           ) : null}

@@ -190,11 +190,11 @@ export const SidebarMenuButton = forwardRef<
       ref={ref}
       type="button"
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-sm font-medium transition-colors outline-none",
-        "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground",
-        isActive && "bg-primary text-white font-semibold hover:bg-primary",
-        collapsed && "justify-center px-0 py-2.5",
-        size === "sm" && "py-1.5 text-xs",
+        "flex w-full items-center gap-2.5 rounded-control border-0 bg-sidebar px-2.5 h-10 text-sm font-semibold text-black transition-all duration-150 outline-none",
+        "hover:shadow-sm",
+        isActive && "shadow-sm font-bold bg-sidebar text-black",
+        collapsed && "w-10 h-10 mx-auto justify-center px-0",
+        size === "sm" && "h-8 text-xs",
         className,
       )}
       {...props}
@@ -223,7 +223,7 @@ export const SidebarTrigger = forwardRef<HTMLButtonElement, ComponentProps<"butt
         ref={ref}
         type="button"
         className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-control text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          "inline-flex h-10 w-10 items-center justify-center rounded-control border-0 bg-sidebar text-black transition-all duration-150 hover:shadow-sm focus:outline-none",
           className,
         )}
         onClick={toggleCollapsed}
@@ -232,9 +232,9 @@ export const SidebarTrigger = forwardRef<HTMLButtonElement, ComponentProps<"butt
         {...props}
       >
         {collapsed ? (
-          <PanelLeftOpen className="h-4 w-4" strokeWidth={1.75} />
+          <PanelLeftOpen className="h-5 w-5 text-black" strokeWidth={1.75} />
         ) : (
-          <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
+          <PanelLeftClose className="h-5 w-5 text-black" strokeWidth={1.75} />
         )}
       </button>
     );

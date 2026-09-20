@@ -248,3 +248,10 @@ Heavy dispatcher map/queue workflows remain desktop-preferred. Operator install 
   - On `/sos`: hides "SOS", displaying only the "Report" action.
   - Preserves clean citizen workflow and consistent header state across mobile and desktop.
 
+### 10.4 Unified Sidebar & Notification Controls Styling
+- **Button Background & Border**: Sidebar operational buttons, collapse trigger, profile dropdown, and header notification bell styled with `border-0 bg-sidebar` (or `bg-transparent`), eliminating borders and background mismatch.
+- **Dark Black Content**: Text labels and icons configured to dark black (`text-black font-semibold/bold`) with crisp stroke rendering.
+- **Hover Light Elevation**: Subtle shadow transition on hover (`hover:shadow-sm`) across all sidebar buttons and header controls.
+- **Size Consistency**: Collapse toggle button standardized to `h-10 w-10`, exactly matching operational button heights and collapsed dimensions.
+
+

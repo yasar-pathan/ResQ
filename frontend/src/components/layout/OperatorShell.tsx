@@ -78,13 +78,13 @@ function SidebarProfileDropdown({
         <button
           type="button"
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-control p-2 text-left transition-colors hover:bg-slate-100 focus:outline-none focus:ring-1 focus:ring-primary",
+            "flex w-full items-center gap-2.5 rounded-control border-0 bg-sidebar p-2 text-left text-black transition-all duration-150 hover:shadow-sm focus:outline-none",
             collapsed && "justify-center p-1.5",
           )}
           aria-label="User account settings"
         >
           <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white shadow-sm"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-xs font-bold text-white shadow-sm"
             aria-hidden
           >
             {initials(name)}
@@ -92,14 +92,14 @@ function SidebarProfileDropdown({
           {!collapsed ? (
             <>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold leading-tight text-slate-900">
+                <p className="truncate text-sm font-bold leading-tight text-black">
                   {name || "Operator"}
                 </p>
-                <p className="truncate text-xs capitalize text-muted">
+                <p className="truncate text-xs capitalize text-slate-700 font-medium">
                   {role?.replaceAll("_", " ") || "Personnel"}
                 </p>
               </div>
-              <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />
+              <ChevronUp className="h-4 w-4 shrink-0 text-black" />
             </>
           ) : (
             <span className="sr-only">{name}</span>
@@ -169,11 +169,19 @@ function ShellNavItems({
             >
               <SidebarMenuButton isActive={active}>
                 <Icon
-                  className={cn("h-4 w-4 shrink-0", active ? "text-white" : "text-slate-500")}
-                  strokeWidth={1.75}
+                  className={cn("h-5 w-5 shrink-0 text-black", active ? "stroke-[2.25px]" : "stroke-[1.75px]")}
                   aria-hidden
                 />
-                {!collapsed ? <span>{l.label}</span> : <span className="sr-only">{l.label}</span>}
+                {!collapsed ? (
+                  <span className={cn("truncate text-black", active ? "font-bold" : "font-semibold")}>
+                    {l.label}
+                  </span>
+                ) : (
+                  <span className="sr-only">{l.label}</span>
+                )}
+                {active && !collapsed ? (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-black shrink-0" aria-hidden />
+                ) : null}
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -213,25 +221,25 @@ function OperatorShellInner({ children }: { children: ReactNode }) {
           <SheetTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-control text-slate-700 transition-colors hover:bg-slate-100 md:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-control border-0 bg-transparent text-black transition-all duration-150 hover:shadow-sm focus:outline-none md:hidden"
               aria-label="Open menu"
             >
-              <Menu className="h-5 w-5" strokeWidth={1.75} />
+              <Menu className="h-5 w-5 text-black" strokeWidth={1.75} />
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="bg-surface border-r border-border p-0">
             <div className="flex h-full flex-col">
               <div className="flex h-14 items-center justify-between border-b border-border px-3">
-                <span className="text-sm font-semibold text-slate-900">
+                <span className="text-sm font-bold text-black">
                   RescueGrid Operations
                 </span>
                 <SheetClose asChild>
                   <button
                     type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-control text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-control border-0 bg-transparent text-black transition-all duration-150 hover:shadow-sm focus:outline-none"
                     aria-label="Close menu"
                   >
-                    <X className="h-5 w-5" strokeWidth={1.75} />
+                    <X className="h-5 w-5 text-black" strokeWidth={1.75} />
                   </button>
                 </SheetClose>
               </div>
@@ -262,9 +270,9 @@ function OperatorShellInner({ children }: { children: ReactNode }) {
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <Sidebar>
-          <SidebarHeader className="justify-between gap-2 border-b border-border">
+          <SidebarHeader className={cn("border-b border-border", collapsed ? "justify-center px-0" : "justify-between px-3 gap-2")}>
             {!collapsed ? (
-              <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-slate-900">
+              <p className="min-w-0 flex-1 truncate text-sm font-bold leading-tight text-black">
                 RescueGrid Ops
               </p>
             ) : null}
