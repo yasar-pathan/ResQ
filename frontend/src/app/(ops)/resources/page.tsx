@@ -2,10 +2,26 @@
 
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Ambulance, Building2, ChevronDown, MapPin, Users, Wrench, type LucideIcon } from "lucide-react";
+import {
+  Ambulance,
+  Building2,
+  ChevronDown,
+  MapPin,
+  Plus,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { OpsMapDynamic } from "@/components/maps/OpsMapDynamic";
 import { resourceStatusColor } from "@/components/maps/mapStyles";
 import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +34,7 @@ import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
+import { cn } from "@/lib/utils";
 import {
   ApiError,
   createResource,
@@ -164,6 +181,7 @@ function ResourcesPageInner() {
       setMessage(msg);
       toast({ title: "Resource Added", description: msg, variant: "success" });
       setName("");
+      setAddDialogOpen(false);
       await load();
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Create failed";
@@ -193,14 +211,19 @@ function ResourcesPageInner() {
     }
   }
 
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       <header className="flex shrink-0 flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-xl font-bold md:text-2xl">Resources</h1>
-          <p className="text-sm text-muted">Inventory and map of response units</p>
+          <h1 className="font-display text-xl font-bold text-slate-900 md:text-2xl">Emergency Resources</h1>
+          <p className="text-sm text-muted">
+            Fleet inventory and live tactical deployment · {items.length} units registered
+          </p>
         </div>
-        <div className="filter-row !mt-0">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -229,16 +252,172 @@ function ResourcesPageInner() {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Add Resource Trigger Button */}
+          {canManage ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setAddDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 font-semibold shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Deploy Resource</span>
+            </Button>
+          ) : null}
         </div>
       </header>
 
       {error ? <p className="form-error shrink-0">{error}</p> : null}
       {message ? <p className="form-success shrink-0">{message}</p> : null}
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_minmax(280px,380px)]">
+      {/* Modern Add Resource Modal Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="w-[min(94vw,520px)] p-6 bg-white shadow-2xl rounded-2xl border border-slate-200">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg font-bold text-slate-900">
+                Deploy Emergency Resource
+              </DialogTitle>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200">
+                {isAdmin ? "Admin Console" : "Dispatcher Console"}
+              </span>
+            </div>
+            <DialogDescription className="text-xs text-muted">
+              Register a new response squad, advanced life support ambulance, or disaster equipment.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={onCreate} className="space-y-4 pt-2">
+            {/* Resource Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Resource Name</label>
+              <input
+                className="field w-full"
+                placeholder="e.g. Ahmedabad SDRF Rapid Team 2"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Resource Type Selection */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Unit Classification</label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {RESOURCE_TYPES.map((t) => {
+                  const Icon = TYPE_ICONS[t];
+                  const active = type === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setType(t)}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition-all",
+                        active
+                          ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30"
+                          : "border-border bg-slate-50/50 text-slate-600 hover:bg-slate-100/80 hover:text-slate-900",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="capitalize">{t}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Location & Coordinates Card */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800">Deployment Coordinates</span>
+                <button
+                  type="button"
+                  onClick={handleGetGPS}
+                  disabled={locating}
+                  className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100 transition"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {locating ? "Acquiring GPS…" : "Use My GPS"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-medium text-muted block mb-1">Latitude</label>
+                  <input
+                    className="field w-full text-xs"
+                    placeholder="23.0225"
+                    value={lat}
+                    onChange={(e) => setLat(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-muted block mb-1">Longitude</label>
+                  <input
+                    className="field w-full text-xs"
+                    placeholder="72.5714"
+                    value={lng}
+                    onChange={(e) => setLng(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Gujarat Presets */}
+              <div className="pt-1">
+                <span className="text-[10px] font-medium text-slate-500 block mb-1">
+                  Gujarat Municipality Anchors:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {GUJARAT_PRESETS.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => {
+                        setLat(p.lat);
+                        setLng(p.lng);
+                      }}
+                      className="rounded border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-2xs hover:bg-slate-100 hover:border-slate-300 transition"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setAddDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                loading={creating}
+                className="font-semibold shadow-sm"
+              >
+                Register Resource
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main Grid: Left Map + Right Full-Height Scrollable Resource Inventory */}
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_minmax(320px,400px)]">
+        {/* Left: Map */}
         <section className="flex min-h-0 flex-col overflow-hidden rounded-panel border border-border bg-surface">
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <h2 className="text-base font-bold">Map</h2>
+            <h2 className="text-base font-bold">Tactical Map</h2>
             <div className="flex flex-wrap gap-3 text-xs font-semibold">
               <span className="inline-flex items-center gap-1.5">
                 <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#15803d" }} />
@@ -267,201 +446,144 @@ function ResourcesPageInner() {
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-col gap-3 overflow-hidden">
-          {canManage ? (
-            <form
-              className="stack shrink-0 gap-2.5 rounded-panel border border-border bg-surface p-3.5 shadow-sm"
-              onSubmit={onCreate}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-slate-900">Add Emergency Resource</h2>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                  {isAdmin ? "Admin Access" : "Dispatcher Access"}
-                </span>
-              </div>
-              <input
-                className="field"
-                placeholder="Resource Name (e.g. 108 Ambulance Unit 4)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex h-9 w-full items-center justify-between rounded-control border border-border bg-white px-3 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <span className="capitalize">{type.replaceAll("_", " ")}</span>
-                    <ChevronDown className="h-3.5 w-3.5 text-muted" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 bg-surface">
-                  <DropdownMenuRadioGroup value={type} onValueChange={(v) => setType(v as typeof type)}>
-                    {RESOURCE_TYPES.map((t) => (
-                      <DropdownMenuRadioItem key={t} value={t} className="capitalize">
-                        {t.replaceAll("_", " ")}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Coordinates & Location Helpers */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-muted">Location Coordinates</span>
-                  <button
-                    type="button"
-                    onClick={handleGetGPS}
-                    disabled={locating}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-                  >
-                    <MapPin className="h-3 w-3" />
-                    {locating ? "Locating…" : "Use My GPS"}
-                  </button>
-                </div>
-                <div className="filter-row !mt-0">
-                  <input
-                    className="field"
-                    placeholder="Latitude"
-                    value={lat}
-                    onChange={(e) => setLat(e.target.value)}
-                    required
-                  />
-                  <input
-                    className="field"
-                    placeholder="Longitude"
-                    value={lng}
-                    onChange={(e) => setLng(e.target.value)}
-                    required
-                  />
-                </div>
-                {/* Gujarat Quick Presets */}
-                <div className="flex flex-wrap items-center gap-1 pt-1">
-                  <span className="text-[10px] text-muted">Gujarat:</span>
-                  {GUJARAT_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => {
-                        setLat(p.lat);
-                        setLng(p.lng);
-                      }}
-                      className="rounded border border-border bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-100 transition"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Button type="submit" size="sm" loading={creating} className="w-full">
-                Register Resource
-              </Button>
-            </form>
-          ) : null}
+        {/* Right: Full-Height Smooth-Scrollable Fleet List */}
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-panel border border-border bg-surface shadow-xs">
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900">Fleet Units</h2>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                {items.length}
+              </span>
+            </div>
+            {canManage ? (
+              <button
+                type="button"
+                onClick={() => setAddDialogOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add New
+              </button>
+            ) : null}
+          </div>
 
           <ScrollArea
-            className="min-h-0 flex-1 rounded-panel border border-border bg-surface"
+            className="min-h-0 flex-1"
+            type="always"
             withFade
-            hideScrollbar
+            hideScrollbar={false}
           >
             {loading ? (
-              <div className="space-y-3 p-3 pb-12">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
-                    <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
+              <div className="space-y-3 p-3.5 pb-12">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white">
+                    <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
                     <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-4 w-36" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
-                    <Skeleton className="h-8 w-8 shrink-0 rounded-control" />
+                    <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
                   </div>
                 ))}
               </div>
             ) : null}
 
             {!loading && (
-              <ul className="divide-y divide-border pb-12">
+              <ul className="space-y-2 p-3 pb-16">
                 {items.length === 0 ? (
-                  <li className="p-4 text-sm text-muted">No resources match this filter.</li>
+                  <li className="p-8 text-center text-sm text-muted">
+                    No resources match this status filter.
+                  </li>
                 ) : (
-                  items.map((r) => (
-                    <li
-                      key={r.id}
-                      className={`flex items-start gap-2 p-3 ${
-                        selectedId === r.id ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <span
-                        className="mt-1.5 inline-block h-3 w-3 shrink-0 rounded-sm"
-                        style={{ background: resourceStatusColor(r) }}
-                        aria-hidden
-                      />
-                      <span className="mt-1 inline-flex shrink-0 text-slate-600" title={r.type}>
-                        <TypeIcon type={r.type} />
-                      </span>
-                      <HoverCard
-                        trigger={
+                  items.map((r) => {
+                    const isSelected = selectedId === r.id;
+                    const statusColor = resourceStatusColor(r);
+                    const isAvailable = r.is_active && r.status === "available";
+                    return (
+                      <li
+                        key={r.id}
+                        className={cn(
+                          "group relative flex items-center justify-between gap-3 rounded-xl border p-3 transition-all duration-150",
+                          isSelected
+                            ? "border-primary bg-blue-50/40 ring-1 ring-primary/30 shadow-xs"
+                            : "border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-xs",
+                        )}
+                      >
+                        {/* Left: Type Icon with Status Dot */}
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <div
+                            className={cn(
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
+                              isAvailable
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                                : r.status === "assigned"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200/60"
+                                : "bg-slate-100 text-slate-600 border border-slate-200",
+                            )}
+                          >
+                            <TypeIcon type={r.type} />
+                          </div>
+
+                          {/* Info Area (Clickable to select and center on map) */}
                           <button
                             type="button"
                             className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left"
                             onClick={() => selectResource(r.id)}
                           >
-                            <p className="font-semibold">{r.name}</p>
-                            <p className="text-xs capitalize text-muted">
-                              {r.type} · {statusLabel(r)}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-xs text-slate-900 leading-snug truncate group-hover:text-primary transition-colors">
+                                {r.name}
+                              </p>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.2 text-[10px] font-bold uppercase"
+                                style={{
+                                  backgroundColor: `${statusColor}18`,
+                                  color: statusColor,
+                                }}
+                              >
+                                <span
+                                  className="inline-block h-1.5 w-1.5 rounded-full"
+                                  style={{ backgroundColor: statusColor }}
+                                />
+                                {statusLabel(r)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] capitalize text-slate-500 mt-0.5">
+                              {r.type} · Lat {r.location.latitude.toFixed(4)}, Lng {r.location.longitude.toFixed(4)}
                             </p>
                           </button>
-                        }
-                      >
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-semibold">{r.name}</span>
-                            <span
-                              className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase text-white"
-                              style={{ background: resourceStatusColor(r) }}
-                            >
-                              {statusLabel(r)}
-                            </span>
-                          </div>
-                          <p className="text-xs capitalize text-muted">
-                            <strong>Type:</strong> {r.type}
-                          </p>
-                          <p className="text-xs text-muted">
-                            <strong>Location:</strong> {r.location.latitude.toFixed(4)},{" "}
-                            {r.location.longitude.toFixed(4)}
-                          </p>
-                          <p className="text-xs text-muted">
-                            <strong>Active:</strong> {r.is_active ? "Yes" : "No"}
-                          </p>
                         </div>
-                      </HoverCard>
-                      <Tooltip tip={`Show ${r.name} on map`}>
-                        <button
-                          type="button"
-                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-slate-700 transition-colors hover:bg-slate-100"
-                          aria-label={`Show ${r.name} on map`}
-                          onClick={() => selectResource(r.id)}
-                        >
-                          <MapPin className="h-5 w-5" strokeWidth={1.75} />
-                        </button>
-                      </Tooltip>
-                      {canManage ? (
-                        <Tooltip tip="Deactivate this resource from service">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => void onDeactivate(r.id)}
-                          >
-                            Deactivate
-                          </Button>
-                        </Tooltip>
-                      ) : null}
-                    </li>
-                  ))
+
+                        {/* Right: Actions */}
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Tooltip tip={`Focus on map`}>
+                            <button
+                              type="button"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+                              aria-label={`Focus ${r.name} on map`}
+                              onClick={() => selectResource(r.id)}
+                            >
+                              <MapPin className="h-4 w-4" />
+                            </button>
+                          </Tooltip>
+
+                          {canManage && r.is_active !== false ? (
+                            <Tooltip tip="Mark inactive">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="h-8 px-2 text-[11px] font-medium text-slate-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200"
+                                onClick={() => void onDeactivate(r.id)}
+                              >
+                                Deactivate
+                              </Button>
+                            </Tooltip>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })
                 )}
               </ul>
             )}

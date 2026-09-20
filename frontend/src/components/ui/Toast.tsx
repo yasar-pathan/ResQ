@@ -1,7 +1,7 @@
 "use client";
 
 import * as ToastPrimitive from "@radix-ui/react-toast";
-import { X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Bell, X } from "lucide-react";
 import {
   createContext,
   forwardRef,
@@ -43,6 +43,35 @@ export function useToast() {
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 
+function ToastVariantIcon({ variant }: { variant?: ToastVariant }) {
+  switch (variant) {
+    case "success":
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100/80 text-emerald-600">
+          <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+      );
+    case "error":
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-100/80 text-red-600">
+          <AlertCircle className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+      );
+    case "info":
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100/80 text-blue-600">
+          <Info className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+      );
+    default:
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+          <Bell className="h-4 w-4" strokeWidth={2} />
+        </span>
+      );
+  }
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const counter = useRef(0);
@@ -69,12 +98,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               if (!open) remove(t.id);
             }}
             className={cn(
-              t.variant === "success" && "toast-success",
-              t.variant === "error" && "toast-error",
-              t.variant === "info" && "toast-info",
+              t.variant === "success" && "border-emerald-200/80 shadow-emerald-500/10",
+              t.variant === "error" && "border-red-200/80 shadow-red-500/10",
+              t.variant === "info" && "border-blue-200/80 shadow-blue-500/10",
             )}
           >
-            <div className="min-w-0 flex-1">
+            <ToastVariantIcon variant={t.variant} />
+            <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
               {t.title && <ToastTitle>{t.title}</ToastTitle>}
               <ToastDescription>{t.description}</ToastDescription>
             </div>
@@ -98,7 +128,8 @@ export const ToastRoot = forwardRef<
       ref={ref}
       data-radix-toast-root=""
       className={cn(
-        "flex items-start gap-3 rounded-panel border border-border bg-white px-4 py-3 shadow-lg text-sm pointer-events-auto",
+        "pointer-events-auto flex w-full max-w-[380px] items-start gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-2xl backdrop-blur-md transition-all duration-300",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-80 data-[state=open]:slide-in-from-bottom-full",
         className,
       )}
       {...props}
@@ -113,7 +144,7 @@ export const ToastTitle = forwardRef<
   return (
     <ToastPrimitive.Title
       ref={ref}
-      className={cn("text-sm font-semibold", className)}
+      className={cn("text-xs font-bold text-slate-900 tracking-tight", className)}
       {...props}
     />
   );
@@ -126,7 +157,7 @@ export const ToastDescription = forwardRef<
   return (
     <ToastPrimitive.Description
       ref={ref}
-      className={cn("text-sm text-muted", className)}
+      className={cn("text-xs font-medium text-slate-600 leading-relaxed", className)}
       {...props}
     />
   );
@@ -136,9 +167,9 @@ export function ToastClose() {
   return (
     <ToastPrimitive.Close
       aria-label="Dismiss notification"
-      className="shrink-0 rounded-control p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+      className="shrink-0 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
     >
-      <X className="h-3.5 w-3.5" />
+      <X className="h-4 w-4" />
     </ToastPrimitive.Close>
   );
 }
@@ -147,7 +178,7 @@ export function ToastViewport() {
   return (
     <ToastPrimitive.Viewport
       data-radix-toast-viewport=""
-      className="fixed bottom-5 right-5 z-[999] flex max-w-[380px] flex-col gap-2 outline-none"
+      className="fixed bottom-6 right-6 z-[9999] flex max-w-[400px] flex-col gap-2.5 outline-none pointer-events-none"
     />
   );
 }
