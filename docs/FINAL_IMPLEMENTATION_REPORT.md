@@ -223,3 +223,28 @@ API remains source of truth; UI gates are defense in depth.
 - Install hint on citizen home
 
 Heavy dispatcher map/queue workflows remain desktop-preferred. Operator install steps: `MANUAL_TASKS.md`.
+
+---
+
+## 10. Phase 16.3 Deliverables (Queue Scroll-Fade, Log Call Polish & Citizen Navigation)
+
+### 10.1 Queue Scroll Fade Engine (`ScrollArea.tsx`)
+- Modernized `ScrollAreaPrimitive.Root` with dynamic gradient overlays (`pointer-events-none`) for top and bottom scroll fades.
+- Real-time scroll state detection (`canScrollUp`, `canScrollDown`) via `ResizeObserver` observing the Radix viewport, inner content wrapper, and onScroll events.
+- Added offset padding (`right-2.5`) to ensure the custom vertical scrollbar thumb remains crisp and unobstructed.
+
+### 10.2 Log Call Intake Form Refactor (`/incidents/log`)
+- **Viewport Layout**: Container wrapped in `h-full min-h-0 flex-1 overflow-y-auto pr-1 pb-12` inside `OperatorShell`, resolving bottom overflow and ensuring form actions and submit button remain fully accessible across all screen heights.
+- **Intake Logic Improvisations**:
+  - Added structured intake fields: **Caller Name**, **Callback Phone Number**, and **Intake Channel** (112/100 emergency, control room, radio, walk-in).
+  - Formats caller metadata cleanly into `address_text` for dispatchers and field units.
+  - Added live character counter badge with minimum 10-character validation indicator.
+  - Implemented keyboard shortcut: `Ctrl + Enter` / `Cmd + Enter` to log incidents instantly.
+  - Responsive 2-column layout (7 cols for Intake & Caller info, 5 cols for LocationPicker and Dispatch Guidance).
+
+### 10.3 Contextual Citizen Header Navigation (`AppShell.tsx`)
+- Eliminated redundant self-referencing navigation links:
+  - On `/report` and `/report/*`: hides "Report", displaying only the "SOS" action.
+  - On `/sos`: hides "SOS", displaying only the "Report" action.
+  - Preserves clean citizen workflow and consistent header state across mobile and desktop.
+

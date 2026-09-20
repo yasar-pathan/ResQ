@@ -13,6 +13,8 @@ type AppShellProps = {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const hideChrome = pathname === "/";
+  const isReport = pathname.startsWith("/report");
+  const isSos = pathname.startsWith("/sos");
 
   return (
     <div className={`citizen-shell${hideChrome ? " citizen-shell-bare" : ""}`}>
@@ -21,14 +23,18 @@ export function AppShell({ children }: AppShellProps) {
           <div className="citizen-header-inner">
             <BrandMark href="/" size={40} />
             <nav className="citizen-nav" aria-label="Citizen">
-              <Link href="/report" className="nav-link">
-                <FileText size={18} aria-hidden />
-                Report
-              </Link>
-              <Link href="/sos" className="nav-sos">
-                <AlertTriangle size={18} aria-hidden />
-                SOS
-              </Link>
+              {!isReport ? (
+                <Link href="/report" className="nav-link">
+                  <FileText size={18} aria-hidden />
+                  Report
+                </Link>
+              ) : null}
+              {!isSos ? (
+                <Link href="/sos" className="nav-sos">
+                  <AlertTriangle size={18} aria-hidden />
+                  SOS
+                </Link>
+              ) : null}
             </nav>
           </div>
         </header>

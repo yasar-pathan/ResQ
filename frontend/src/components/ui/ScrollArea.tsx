@@ -1,7 +1,15 @@
 "use client";
 
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
-import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+  type ElementRef,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export const ScrollArea = forwardRef<
@@ -15,21 +23,85 @@ export const ScrollArea = forwardRef<
   { className, children, withFade = false, fadeBoth = false, viewportClassName, ...props },
   ref,
 ) {
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const enableFade = withFade || fadeBoth;
+
+  const checkScroll = useCallback(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setCanScrollUp(scrollTop > 4);
+    setCanScrollDown(scrollHeight - scrollTop - clientHeight > 6);
+  }, []);
+
+  useEffect(() => {
+    if (!enableFade) return;
+    const el = viewportRef.current;
+    if (!el) return;
+
+    checkScroll();
+    const frameId = requestAnimationFrame(checkScroll);
+    const timeoutId = setTimeout(checkScroll, 100);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => checkScroll());
+      ro.observe(el);
+      const firstChild = el.firstElementChild as HTMLElement | null;
+      if (firstChild) {
+        ro.observe(firstChild);
+        if (firstChild.firstElementChild) {
+          ro.observe(firstChild.firstElementChild as HTMLElement);
+        }
+      }
+    }
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timeoutId);
+      ro?.disconnect();
+    };
+  }, [enableFade, checkScroll, children]);
+
   return (
     <ScrollAreaPrimitive.Root
       ref={ref}
       className={cn("relative overflow-hidden", className)}
       {...props}
     >
+      {enableFade ? (
+        <div
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute top-0 left-0 right-2.5 z-10 h-7 bg-gradient-to-b from-white via-white/80 to-transparent transition-opacity duration-200",
+            canScrollUp ? "opacity-100" : "opacity-0",
+          )}
+        />
+      ) : null}
+
       <ScrollAreaPrimitive.Viewport
+        ref={viewportRef}
+        onScroll={enableFade ? checkScroll : undefined}
         className={cn(
           "h-full w-full rounded-[inherit]",
-          withFade && (fadeBoth ? "scroll-fade-both" : "scroll-fade-viewport"),
           viewportClassName,
         )}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
+
+      {enableFade ? (
+        <div
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute bottom-0 left-0 right-2.5 z-10 h-10 bg-gradient-to-t from-white via-white/85 to-transparent transition-opacity duration-200",
+            canScrollDown ? "opacity-100" : "opacity-0",
+          )}
+        />
+      ) : null}
+
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
