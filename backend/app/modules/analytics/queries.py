@@ -18,8 +18,10 @@ async def overview_kpis(
                 f"""
                 SELECT
                   COUNT(*)::int AS total_incidents,
+                  COUNT(*) FILTER (WHERE i.status IN ('reported', 'classified'))::int AS pending_triage,
                   COUNT(*) FILTER (WHERE i.status IN ('assigned','in_progress'))::int AS active,
                   COUNT(*) FILTER (WHERE i.status IN ('resolved','closed'))::int AS resolved,
+                  COUNT(*) FILTER (WHERE i.status = 'merged')::int AS merged,
                   COUNT(*) FILTER (WHERE i.priority = 'critical')::int AS critical,
                   COUNT(*) FILTER (WHERE i.category = 'personal_safety')::int AS personal_safety_count
                 FROM incidents i
@@ -62,15 +64,21 @@ async def response_delays(
             text(
                 f"""
                 SELECT
-                  COUNT(*) FILTER (WHERE a.assigned_at IS NOT NULL)::int AS assigned_count,
+                  COUNT(DISTINCT i.id) FILTER (WHERE a.created_at IS NOT NULL)::int AS assigned_count,
                   COALESCE(
-                    AVG(EXTRACT(EPOCH FROM (a.assigned_at - i.created_at)) / 60.0)
-                    FILTER (WHERE a.assigned_at IS NOT NULL),
+                    AVG(GREATEST(0.5, EXTRACT(EPOCH FROM (COALESCE(a.assigned_at, a.created_at) - i.created_at)) / 60.0))
+                    FILTER (WHERE a.created_at IS NOT NULL),
                     0
-                  )::float AS avg_minutes_to_assign
+                  )::float AS avg_minutes_to_assign,
+                  COALESCE(
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (
+                      ORDER BY GREATEST(0.5, EXTRACT(EPOCH FROM (COALESCE(a.assigned_at, a.created_at) - i.created_at)) / 60.0)
+                    ) FILTER (WHERE a.created_at IS NOT NULL),
+                    0
+                  )::float AS median_minutes_to_assign
                 FROM incidents i
                 LEFT JOIN LATERAL (
-                  SELECT assigned_at FROM assignments
+                  SELECT assigned_at, created_at FROM assignments
                   WHERE incident_id = i.id
                   ORDER BY created_at ASC LIMIT 1
                 ) a ON true
@@ -82,7 +90,8 @@ async def response_delays(
     ).mappings().one()
     return {
         "assigned_count": row["assigned_count"],
-        "avg_minutes_to_assign": round(float(row["avg_minutes_to_assign"] or 0), 2),
+        "avg_minutes_to_assign": round(float(row["avg_minutes_to_assign"] or 0), 1),
+        "median_minutes_to_assign": round(float(row["median_minutes_to_assign"] or 0), 1),
     }
 
 

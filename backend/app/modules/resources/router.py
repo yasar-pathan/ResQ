@@ -55,3 +55,15 @@ async def update_resource(
     service = ResourceService(session)
     data = await service.update(resource_id, body)
     return JSONResponse(content=success_response(data))
+
+
+@router.delete("/{resource_id}")
+async def delete_resource(
+    resource_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_role(UserRole.dispatcher, UserRole.admin))],
+) -> JSONResponse:
+    service = ResourceService(session)
+    await service.delete(resource_id)
+    return JSONResponse(content=success_response(None, message="Resource deleted successfully"))
+

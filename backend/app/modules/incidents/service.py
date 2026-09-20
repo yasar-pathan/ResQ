@@ -206,8 +206,36 @@ class IncidentService:
                 raise AuthorizationError("Access restricted for your role")
 
         pii = await resolve_pii_visibility(self.session, incident, viewer)
+        data = serialize_incident(incident, viewer, pii=pii)
+
+        from app.models.assignment import Assignment
+        from app.models.resource import Resource
+        from sqlalchemy import select as sa_select
+
+        stmt = (
+            sa_select(Assignment, Resource)
+            .join(Resource, Assignment.resource_id == Resource.id)
+            .where(Assignment.incident_id == incident.id)
+            .order_by(Assignment.created_at.desc())
+            .limit(1)
+        )
+        res = await self.session.execute(stmt)
+        row = res.first()
+        if row:
+            assign_obj, res_obj = row
+            data["active_assignment"] = {
+                "id": str(assign_obj.id),
+                "resource_id": str(res_obj.id),
+                "resource_name": res_obj.name,
+                "resource_type": res_obj.type.value,
+                "status": assign_obj.status.value,
+                "assigned_at": assign_obj.assigned_at.isoformat() if assign_obj.assigned_at else None,
+            }
+        else:
+            data["active_assignment"] = None
+
         await self.session.commit()
-        return serialize_incident(incident, viewer, pii=pii)
+        return data
 
     async def update_status(
         self, incident_id: uuid.UUID, new_status: IncidentStatus, viewer: User

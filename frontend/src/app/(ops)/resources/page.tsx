@@ -8,6 +8,7 @@ import {
   ChevronDown,
   MapPin,
   Plus,
+  Trash2,
   Users,
   Wrench,
   type LucideIcon,
@@ -38,6 +39,7 @@ import { cn } from "@/lib/utils";
 import {
   ApiError,
   createResource,
+  deleteResource,
   listResources,
   updateResource,
   type ResourceItem,
@@ -208,6 +210,26 @@ function ResourcesPageInner() {
       const msg = err instanceof ApiError ? err.message : "Update failed";
       setError(msg);
       toast({ title: "Update failed", description: msg, variant: "error" });
+    }
+  }
+
+  async function onRemoveResource(id: string, name: string) {
+    if (!window.confirm(`Permanently remove resource "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    const token = getToken();
+    if (!token || !canManage) return;
+    try {
+      await deleteResource(token, id);
+      toast({
+        title: "Resource Removed",
+        description: `Successfully removed ${name}`,
+        variant: "success",
+      });
+      await load();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Delete failed";
+      toast({ title: "Remove Failed", description: msg, variant: "error" });
     }
   }
 
@@ -410,10 +432,8 @@ function ResourcesPageInner() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
-
-      {/* Main Grid: Left Map + Right Full-Height Scrollable Resource Inventory */}
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_minmax(320px,400px)]">
+      </Dialog>      {/* Main Grid: Left Map + Right Full-Height Scrollable Resource Inventory */}
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_minmax(380px,460px)]">
         {/* Left: Map */}
         <section className="flex min-h-0 flex-col overflow-hidden rounded-panel border border-border bg-surface">
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -459,10 +479,10 @@ function ResourcesPageInner() {
               <button
                 type="button"
                 onClick={() => setAddDialogOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200/80 shadow-2xs hover:bg-blue-100 hover:border-blue-300 active:scale-95 transition-all outline-none"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add New
+                <span>Deploy Unit</span>
               </button>
             ) : null}
           </div>
@@ -489,7 +509,7 @@ function ResourcesPageInner() {
             ) : null}
 
             {!loading && (
-              <ul className="space-y-2 p-3 pb-16">
+              <ul className="space-y-2.5 p-3 pb-16">
                 {items.length === 0 ? (
                   <li className="p-8 text-center text-sm text-muted">
                     No resources match this status filter.
@@ -503,83 +523,92 @@ function ResourcesPageInner() {
                       <li
                         key={r.id}
                         className={cn(
-                          "group relative flex items-center justify-between gap-3 rounded-xl border p-3 transition-all duration-150",
+                          "group relative flex flex-col gap-2 rounded-xl border p-3.5 transition-all duration-150",
                           isSelected
                             ? "border-primary bg-blue-50/40 ring-1 ring-primary/30 shadow-xs"
                             : "border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-xs",
                         )}
                       >
-                        {/* Left: Type Icon with Status Dot */}
-                        <div className="flex min-w-0 flex-1 items-start gap-3">
-                          <div
-                            className={cn(
-                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
-                              isAvailable
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                                : r.status === "assigned"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200/60"
-                                : "bg-slate-100 text-slate-600 border border-slate-200",
-                            )}
-                          >
-                            <TypeIcon type={r.type} />
-                          </div>
-
-                          {/* Info Area (Clickable to select and center on map) */}
-                          <button
-                            type="button"
-                            className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left"
-                            onClick={() => selectResource(r.id)}
-                          >
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="font-bold text-xs text-slate-900 leading-snug truncate group-hover:text-primary transition-colors">
-                                {r.name}
-                              </p>
-                              <span
-                                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.2 text-[10px] font-bold uppercase"
-                                style={{
-                                  backgroundColor: `${statusColor}18`,
-                                  color: statusColor,
-                                }}
-                              >
-                                <span
-                                  className="inline-block h-1.5 w-1.5 rounded-full"
-                                  style={{ backgroundColor: statusColor }}
-                                />
-                                {statusLabel(r)}
-                              </span>
+                        {/* Top Tier: Icon + Title & Status Badge */}
+                        <div className="flex items-start justify-between gap-2.5">
+                          <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                            <div
+                              className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors mt-0.5",
+                                isAvailable
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                                  : r.status === "assigned"
+                                  ? "bg-amber-50 text-amber-700 border border-amber-200/60"
+                                  : "bg-slate-100 text-slate-600 border border-slate-200",
+                              )}
+                            >
+                              <TypeIcon type={r.type} />
                             </div>
-                            <p className="text-[11px] capitalize text-slate-500 mt-0.5">
-                              {r.type} · Lat {r.location.latitude.toFixed(4)}, Lng {r.location.longitude.toFixed(4)}
-                            </p>
-                          </button>
-                        </div>
-
-                        {/* Right: Actions */}
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <Tooltip tip={`Focus on map`}>
                             <button
                               type="button"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-                              aria-label={`Focus ${r.name} on map`}
+                              className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left"
                               onClick={() => selectResource(r.id)}
                             >
-                              <MapPin className="h-4 w-4" />
+                              <h3 className="font-bold text-xs text-slate-900 leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                                {r.name}
+                              </h3>
+                              <p className="text-[11px] capitalize text-slate-500 mt-0.5">
+                                {r.type} · Lat {r.location.latitude.toFixed(4)}, Lng {r.location.longitude.toFixed(4)}
+                              </p>
                             </button>
-                          </Tooltip>
+                          </div>
+                          <span
+                            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                            style={{
+                              backgroundColor: `${statusColor}18`,
+                              color: statusColor,
+                            }}
+                          >
+                            <span
+                              className="inline-block h-1.5 w-1.5 rounded-full"
+                              style={{ backgroundColor: statusColor }}
+                            />
+                            {statusLabel(r)}
+                          </span>
+                        </div>
 
-                          {canManage && r.is_active !== false ? (
-                            <Tooltip tip="Mark inactive">
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                className="h-8 px-2 text-[11px] font-medium text-slate-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200"
-                                onClick={() => void onDeactivate(r.id)}
-                              >
-                                Deactivate
-                              </Button>
-                            </Tooltip>
-                          ) : null}
+                        {/* Bottom Tier: Quick Actions bar */}
+                        <div className="flex items-center justify-between border-t border-slate-100/90 pt-2.5 mt-1">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-slate-50/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 active:scale-95 transition-all outline-none"
+                            onClick={() => selectResource(r.id)}
+                          >
+                            <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Center on map</span>
+                          </button>
+
+                          <div className="flex items-center gap-1.5">
+                            {canManage && r.is_active !== false ? (
+                              <Tooltip tip="Mark inactive">
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center rounded-lg border border-slate-200/90 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-2xs hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 active:scale-95 transition-all outline-none"
+                                  onClick={() => void onDeactivate(r.id)}
+                                >
+                                  <span>Deactivate</span>
+                                </button>
+                              </Tooltip>
+                            ) : null}
+
+                            {canManage ? (
+                              <Tooltip tip="Permanently remove resource">
+                                <button
+                                  type="button"
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200/90 bg-white text-slate-400 shadow-2xs hover:border-red-200 hover:bg-red-50 hover:text-red-600 active:scale-95 transition-all outline-none"
+                                  aria-label={`Remove ${r.name}`}
+                                  onClick={() => void onRemoveResource(r.id, r.name)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </Tooltip>
+                            ) : null}
+                          </div>
                         </div>
                       </li>
                     );

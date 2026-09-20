@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.events import publish_incident_update
 from app.core.exceptions import ConflictError, NotFoundError, ValidationAppError
+from app.db.geo import point_to_lat_lng
 from app.models.assignment import Assignment
 from app.models.audit_log import AuditLog
 from app.models.enums import (
@@ -159,13 +160,20 @@ class AssignmentService:
         assignment = await self.session.get(Assignment, assignment_id)
         if assignment is None:
             raise NotFoundError("Assignment not found")
-        if actor.role == UserRole.field_team and assignment.assignee_user_id != actor.id:
-            from app.core.exceptions import AuthorizationError
+        resource = await self.session.get(Resource, assignment.resource_id)
+        if actor.role == UserRole.field_team:
+            has_access = (assignment.assignee_user_id == actor.id) or (
+                resource is not None and resource.operator_user_id == actor.id
+            )
+            if not has_access:
+                from app.core.exceptions import AuthorizationError
 
-            raise AuthorizationError("You can only view your own assignments")
+                raise AuthorizationError("You can only view your own assignments")
+            if assignment.assignee_user_id is None:
+                assignment.assignee_user_id = actor.id
+
         data = serialize_assignment(assignment)
         incident = await self.session.get(Incident, assignment.incident_id)
-        resource = await self.session.get(Resource, assignment.resource_id)
         if incident:
             from app.modules.incidents.pii import resolve_pii_visibility
 
@@ -173,6 +181,7 @@ class AssignmentService:
             desc = incident.description
             if pii.get("restricted"):
                 desc = None
+            lat, lng = point_to_lat_lng(incident.location)
             data["incident"] = {
                 "id": str(incident.id),
                 "tracking_ref": incident.tracking_ref,
@@ -181,6 +190,8 @@ class AssignmentService:
                 "status": incident.status.value,
                 "ai_summary": incident.ai_summary,
                 "description": desc,
+                "address_text": incident.address_text,
+                "location": {"latitude": lat, "longitude": lng},
                 "pii": pii,
             }
             await self.session.commit()
@@ -285,11 +296,19 @@ class AssignmentService:
         if assignment is None:
             raise NotFoundError("Assignment not found")
 
+        resource = await self.session.get(Resource, assignment.resource_id)
+        incident = await self.session.get(Incident, assignment.incident_id)
+
         if actor.role == UserRole.field_team:
-            if assignment.assignee_user_id != actor.id:
+            has_access = (assignment.assignee_user_id == actor.id) or (
+                resource is not None and resource.operator_user_id == actor.id
+            )
+            if not has_access:
                 from app.core.exceptions import AuthorizationError
 
                 raise AuthorizationError("You can only update your own assignments")
+            if assignment.assignee_user_id is None:
+                assignment.assignee_user_id = actor.id
 
         allowed = {
             AssignmentStatus.confirmed: {
@@ -315,8 +334,6 @@ class AssignmentService:
             )
 
         assignment.status = new_status
-        resource = await self.session.get(Resource, assignment.resource_id)
-        incident = await self.session.get(Incident, assignment.incident_id)
 
         if new_status == AssignmentStatus.en_route and incident:
             if incident.status == IncidentStatus.assigned:
@@ -347,19 +364,53 @@ class AssignmentService:
         return serialize_assignment(assignment)
 
     async def list_for_field_team(self, user_id: uuid.UUID) -> list[dict]:
+        res_stmt = select(Resource.id).where(Resource.operator_user_id == user_id)
+        resource_ids = (await self.session.execute(res_stmt)).scalars().all()
+
+        query_cond = Assignment.assignee_user_id == user_id
+        if resource_ids:
+            query_cond = query_cond | Assignment.resource_id.in_(resource_ids)
+
         result = await self.session.execute(
             select(Assignment)
-            .where(Assignment.assignee_user_id == user_id)
+            .where(query_cond)
             .order_by(Assignment.created_at.desc())
         )
         items = []
         for a in result.scalars().all():
             data = serialize_assignment(a)
             incident = await self.session.get(Incident, a.incident_id)
+            resource = await self.session.get(Resource, a.resource_id)
             if incident:
                 data["tracking_ref"] = incident.tracking_ref
                 data["incident_status"] = incident.status.value
                 data["priority"] = incident.priority.value if incident.priority else None
+                data["category"] = incident.category.value if incident.category else None
+                data["description"] = incident.description
+                data["ai_summary"] = incident.ai_summary
+                data["address_text"] = incident.address_text
+                lat, lng = point_to_lat_lng(incident.location)
+                data["location"] = {"latitude": lat, "longitude": lng}
+                data["incident"] = {
+                    "id": str(incident.id),
+                    "tracking_ref": incident.tracking_ref,
+                    "category": incident.category.value if incident.category else None,
+                    "priority": incident.priority.value if incident.priority else None,
+                    "status": incident.status.value,
+                    "ai_summary": incident.ai_summary,
+                    "description": incident.description,
+                    "address_text": incident.address_text,
+                    "location": {"latitude": lat, "longitude": lng},
+                }
+            if resource:
+                data["resource_name"] = resource.name
+                data["resource_type"] = resource.type.value
+                data["resource"] = {
+                    "id": str(resource.id),
+                    "name": resource.name,
+                    "type": resource.type.value,
+                    "status": resource.status.value,
+                }
             items.append(data)
         return items
 

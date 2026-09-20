@@ -269,12 +269,29 @@ export type IncidentListItem = IncidentCreated & {
   classification_source?: string | null;
   classified_at?: string | null;
   tracking_ref: string;
-  /** Active assignment summary injected by the list API (Phase 15). */
+  /** Active assignment summary injected by the API */
   active_assignment?: {
+    id?: string;
+    resource_id?: string;
     resource_name: string;
+    resource_type?: string;
     status: string;
+    assigned_at?: string | null;
   } | null;
 };
+
+export async function updateIncidentStatus(
+  token: string,
+  id: string,
+  status: string,
+): Promise<IncidentListItem> {
+  const res = await fetch(`${getApiBaseUrl()}/incidents/${id}/status`, {
+    method: "PATCH",
+    headers: { ...authHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  return parseEnvelope<IncidentListItem>(res);
+}
 
 export async function listIncidents(
   token: string,
@@ -394,6 +411,15 @@ export async function updateResource(
   });
   return parseEnvelope(res);
 }
+
+export async function deleteResource(token: string, id: string): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/resources/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parseEnvelope<void>(res);
+}
+
 
 export type AlertItem = {
   id: string;

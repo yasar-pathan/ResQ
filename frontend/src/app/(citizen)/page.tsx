@@ -39,12 +39,6 @@ export default function HomePage() {
             <InstallHint />
           </div>
         </div>
-        <p className="home-hero-links home-hero-links-centered animate-enter-delay">
-          Dispatcher or field team?{" "}
-          <Link href="/login" className="home-bottom-pill">
-            Operator Sign-in
-          </Link>
-        </p>
       </section>
     </div>
   );
