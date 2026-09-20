@@ -44,8 +44,6 @@ export default function HomePage() {
           <Link href="/login" className="home-bottom-pill">
             Operator Sign-in
           </Link>
-          {" · "}
-          <Link href="/register">Create citizen account</Link>
         </p>
       </section>
     </div>

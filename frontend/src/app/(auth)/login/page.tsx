@@ -93,8 +93,6 @@ function LoginForm() {
         </form>
         <p className="muted" style={{ marginTop: "1.5rem", fontSize: "0.9rem" }}>
           Citizen reporting? <Link href="/">Go to RescueGrid home</Link>
-          {" · "}
-          <Link href="/register">Create citizen account</Link>
         </p>
       </div>
     </div>
