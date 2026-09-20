@@ -139,7 +139,7 @@ function AlertsPageInner() {
 
       {error ? <p className="form-error shrink-0">{error}</p> : null}
 
-      <ScrollArea className="alerts-scroll min-h-0 flex-1" withFade>
+      <ScrollArea className="alerts-scroll min-h-0 flex-1" withFade hideScrollbar>
         <div className="space-y-4 px-2 py-3 pb-12">
           {loading ? (
             <div className="space-y-3">

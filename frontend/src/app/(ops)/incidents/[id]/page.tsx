@@ -14,7 +14,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { ScrollArea } from "@/components/ui/ScrollArea";
 import {
   ApiError,
   assignResource,

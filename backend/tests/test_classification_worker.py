@@ -47,7 +47,7 @@ async def test_it04_classify_via_fallback_without_llm_key(settings) -> None:
         )
         session.add(incident)
         await session.flush()
-        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.pending, attempts=0)
+        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.processing, attempts=0)
         session.add(queue)
         await session.commit()
 
@@ -85,7 +85,7 @@ async def test_it04_llm_success(settings) -> None:
         )
         session.add(incident)
         await session.flush()
-        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.pending, attempts=0)
+        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.processing, attempts=0)
         session.add(queue)
         await session.commit()
         qid = queue.id
@@ -135,7 +135,7 @@ async def test_it04_llm_malformed_falls_back(settings) -> None:
         )
         session.add(incident)
         await session.flush()
-        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.pending, attempts=0)
+        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.processing, attempts=0)
         session.add(queue)
         await session.commit()
         qid = queue.id
@@ -167,7 +167,7 @@ async def test_it01_post_then_classified(settings) -> None:
         )
         session.add(incident)
         await session.flush()
-        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.pending, attempts=0)
+        queue = ClassificationQueue(incident_id=incident.id, status=QueueStatus.processing, attempts=0)
         session.add(queue)
         await session.commit()
         qid = queue.id
@@ -215,7 +215,7 @@ async def test_it05_dedup_merges_near_duplicate(settings) -> None:
         )
         session.add(child)
         await session.flush()
-        queue = ClassificationQueue(incident_id=child.id, status=QueueStatus.pending, attempts=0)
+        queue = ClassificationQueue(incident_id=child.id, status=QueueStatus.processing, attempts=0)
         session.add(queue)
         await session.commit()
         child_id = child.id

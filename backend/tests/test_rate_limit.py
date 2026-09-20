@@ -1,10 +1,7 @@
 import inspect
 
 from app.factory import create_app
-from app.models.enums import IncidentCategory, IncidentPriority, IncidentSource, IncidentStatus
-from app.models.incident import Incident
 from app.modules.incidents.router import create_incident, create_sos
-from app.modules.incidents.service import serialize_incident
 from slowapi.middleware import SlowAPIMiddleware
 
 

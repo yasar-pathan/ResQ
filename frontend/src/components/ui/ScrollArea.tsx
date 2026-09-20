@@ -18,9 +18,18 @@ export const ScrollArea = forwardRef<
     withFade?: boolean;
     fadeBoth?: boolean;
     viewportClassName?: string;
+    hideScrollbar?: boolean;
   }
 >(function ScrollArea(
-  { className, children, withFade = false, fadeBoth = false, viewportClassName, ...props },
+  {
+    className,
+    children,
+    withFade = false,
+    fadeBoth = false,
+    viewportClassName,
+    hideScrollbar = false,
+    ...props
+  },
   ref,
 ) {
   const [canScrollUp, setCanScrollUp] = useState(false);
@@ -75,7 +84,8 @@ export const ScrollArea = forwardRef<
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute top-0 left-0 right-2.5 z-10 h-7 bg-gradient-to-b from-white via-white/80 to-transparent transition-opacity duration-200",
+            "pointer-events-none absolute top-0 left-0 z-10 h-8 bg-gradient-to-b from-white via-white/80 to-transparent transition-opacity duration-200",
+            hideScrollbar ? "right-0" : "right-2.5",
             canScrollUp ? "opacity-100" : "opacity-0",
           )}
         />
@@ -85,7 +95,7 @@ export const ScrollArea = forwardRef<
         ref={viewportRef}
         onScroll={enableFade ? checkScroll : undefined}
         className={cn(
-          "h-full w-full rounded-[inherit]",
+          "h-full w-full rounded-[inherit] [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]",
           viewportClassName,
         )}
       >
@@ -96,14 +106,15 @@ export const ScrollArea = forwardRef<
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute bottom-0 left-0 right-2.5 z-10 h-10 bg-gradient-to-t from-white via-white/85 to-transparent transition-opacity duration-200",
+            "pointer-events-none absolute bottom-0 left-0 z-10 h-12 bg-gradient-to-t from-white via-white/85 to-transparent transition-opacity duration-200",
+            hideScrollbar ? "right-0" : "right-2.5",
             canScrollDown ? "opacity-100" : "opacity-0",
           )}
         />
       ) : null}
 
-      <ScrollBar />
-      <ScrollAreaPrimitive.Corner />
+      {!hideScrollbar ? <ScrollBar /> : null}
+      {!hideScrollbar ? <ScrollAreaPrimitive.Corner /> : null}
     </ScrollAreaPrimitive.Root>
   );
 });

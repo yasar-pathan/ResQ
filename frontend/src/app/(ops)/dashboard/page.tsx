@@ -307,7 +307,7 @@ function DashboardInner() {
               <span className="text-xs text-muted">{incidents.length} active</span>
             )}
           </div>
-          <ScrollArea className="min-h-0 flex-1" withFade>
+          <ScrollArea className="min-h-0 flex-1" withFade hideScrollbar>
             <ul className="queue-list list-none space-y-2 p-3 pb-12">
               {loading && incidents.length === 0 ? (
                 <>

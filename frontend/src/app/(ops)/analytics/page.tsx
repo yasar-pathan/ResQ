@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <ScrollArea className="h-full min-h-0 flex-1" withFade>
+    <ScrollArea className="h-full min-h-0 flex-1" withFade hideScrollbar>
       <div className="space-y-6 p-1 pr-3 pb-12">
         <header>
           <h1 className="font-display text-xl font-bold md:text-2xl">Analytics</h1>

@@ -286,6 +286,7 @@ function ResourcesPageInner() {
           <ScrollArea
             className="min-h-0 flex-1 rounded-panel border border-border bg-surface"
             withFade
+            hideScrollbar
           >
             {loading ? (
               <div className="space-y-3 p-3 pb-12">

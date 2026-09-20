@@ -266,5 +266,17 @@ Heavy dispatcher map/queue workflows remain desktop-preferred. Operator install 
   - Dispatch intake emergency category and channel selectors (`/incidents/log`).
 - **Scroll Fade Clearance**: Standardized generous bottom padding (`pb-12` / `pb-6`) across Alerts list, Queue list, Resources table, and Notification Popover to prevent items from colliding with the bottom fade overlay.
 
+### 10.6 Queue Scroll Fade Engine & Backend CI/CD Consistency
+- **Queue Items Scrollbar Replaced by Scroll Fade**:
+  - Enhanced `ScrollArea.tsx` with `hideScrollbar?: boolean` prop.
+  - When enabled, suppresses `<ScrollBar />` and `<ScrollAreaPrimitive.Corner />`, hiding physical scrollbar tracks and thumbs.
+  - Fade overlays at top and bottom span edge-to-edge (`right-0`, `left-0`) instead of reserving space (`right-2.5`), providing a seamless gradient blend into the panel borders.
+  - Suppressed native browser scrollbars on `[data-radix-scroll-area-viewport]` via Tailwind utilities `[&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]`.
+  - Fixed `.queue-list` in `globals.css` (resetting legacy `overflow: auto` and `max-height: 70vh` to `overflow: visible; max-height: none; margin-top: 0;`), eliminating the internal items scrollbar that conflicted with the `ScrollArea` viewport.
+  - Applied `hideScrollbar` across `/dashboard` queue, `/alerts`, `/analytics`, `/resources`, and header notification popover.
 
-
+- **Backend Consistency & CI/CD Pipeline Resolution**:
+  - **Ruff Linting**: Cleaned up 7 unused imports (`F401`) in `tests/test_rate_limit.py` and `tests/unit/test_embedding_client.py`.
+  - **Linter Rule Alignment**: Explicitly declared `select = ["E4", "E7", "E9", "F"]` in `backend/pyproject.toml` to guarantee 100% deterministic linting across local environments, Docker, and GitHub Actions `ci.yml`.
+  - **Test Suite Race Condition & Deadlock Fix**: Resolved PostgreSQL `DeadlockDetectedError` in `tests/test_classification_worker.py`. When running integration tests against a live stack with an active background worker container (`rescuegrid-worker`), setting test queue items to `QueueStatus.processing` prevents the background worker from claiming the test rows, eliminating lock contention while `ClassificationService.process_queue_item()` executes.
+  - **Docker-Native Build & Verification**: Rebuilt `api` and `worker` images, verified all 80 backend tests pass (`80 passed, 0 failed`), and verified frontend passes linting and unit tests in Docker.

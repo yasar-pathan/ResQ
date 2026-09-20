@@ -77,7 +77,7 @@ export function NotificationBell() {
         {!loading && preview.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted">No active alerts</p>
         ) : null}
-        <ScrollArea className="max-h-72" withFade>
+        <ScrollArea className="max-h-72" withFade hideScrollbar>
           <ul className="space-y-2 pr-2 pb-6">
             {preview.map((a) => (
               <li key={a.id}>
